@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Ease Builders</title>
+  <script>
+    // GitHub Pages SPA redirect.
+    // Stores the current path in sessionStorage, then redirects to index.html.
+    // The index.html script picks it up and restores the URL.
+    var l = window.location;
+    sessionStorage.redirect = l.protocol + '//' + l.hostname +
+      (l.port ? ':' + l.port : '') + l.pathname + l.search + l.hash;
+    l.replace(l.protocol + '//' + l.hostname +
+      (l.port ? ':' + l.port : '') + '/EBOS/');
+  </script>
+</head>
+<body></body>
+</html>
