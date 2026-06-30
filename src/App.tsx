@@ -294,7 +294,7 @@ function InnerApp() {
     return (
       <div style={{ flex:1, overflowY:'auto', paddingBottom:'80px' }}>
         {/* Tabs */}
-        <div style={{ position:'sticky', top:'52px', zIndex:20, background:'#fff', borderBottom:`1px solid ${C.border}` }}>
+        <div style={{ position:'sticky', top:0, zIndex:20, background:'#fff', borderBottom:`1px solid ${C.border}` }}>
           <div data-no-swipe="true" style={{ overflowX:'auto', display:'flex', padding:'0 8px', WebkitOverflowScrolling:'touch' }}>
             {allowedTabs.map(t => (
               <button key={t} onClick={() => setTab(t)}
