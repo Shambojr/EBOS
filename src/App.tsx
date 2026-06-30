@@ -173,6 +173,9 @@ function InnerApp() {
         )}
       </div>
       <div style={{ display:'flex', alignItems:'center', gap:'4px' }}>
+        {view === 'project' && activeProject && (
+          <button onClick={() => { setProjForm({ ...activeProject }); setEditProjId(activeProject.id); setSheet('edit-project') }} style={{ ...btnGhost, fontSize:'12px', padding:'6px 12px' }}>✎ Edit</button>
+        )}
         <SyncIndicator status={syncStatus} pending={pending}/>
         <button onClick={() => setShowNotifs(true)} style={{ ...btnGhost, border:'none', background:'none', position:'relative', padding:'8px' }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.slate} strokeWidth="1.8" strokeLinecap="round">
@@ -250,6 +253,7 @@ function InnerApp() {
     const [boqForm, setBoqForm]   = useState<any>({})
     const [editMs, setEditMs]     = useState<string | null>(null)
     const [editMat, setEditMat]   = useState<string | null>(null)
+    const [editLog, setEditLog]   = useState<string | null>(null)
 
     const [localTab, setLocalTab] = useState(tab)
     const switchTab = (t: string) => { setLocalTab(t); setTab(t) }
@@ -380,6 +384,7 @@ function InnerApp() {
                     </div>
                     <div style={{ fontSize:'13px', fontWeight:700, color: C.blue }}>{m.pct}%</div>
                     <button onClick={() => { setMsForm({ ...m, due_date: m.due_date ?? '', assignee_id: m.assignee_id ?? '', priority: m.priority, pct: m.pct, notes: m.notes ?? '' }); setEditMs(m.id); setSheet('milestone') }} style={{ ...btnGhost, border:'none', padding:'4px 8px', fontSize:'13px' }}>✎</button>
+                    <button onClick={() => { if(confirm('Delete this milestone?')) pd.deleteMilestone(m.id) }} style={{ ...btnGhost, border:'none', padding:'4px 8px', fontSize:'13px', color: C.red }}>✕</button>
                   </div>
                 )
               })}
@@ -404,7 +409,7 @@ function InnerApp() {
         {localTab === 'logs' && (
           <div style={{ padding:'16px' }}>
             <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'12px' }}>
-              <button style={btnPrimary} onClick={() => { setLogForm({ log_date: today(), labour: {} }); setSheet('log') }}>＋ Log</button>
+              <button style={btnPrimary} onClick={() => { setLogForm({ log_date: today(), labour: {} }); setEditLog(null); setSheet('log') }}>＋ Log</button>
             </div>
             {!pd.logs.length && (
               <EmptyState
@@ -426,7 +431,8 @@ function InnerApp() {
                   </div>
                   <div style={{ display:'flex', gap:'6px', alignItems:'center' }}>
                     {l.day_progress != null && <Badge label={`${l.day_progress}%`} color="blue"/>}
-                    <button onClick={() => pd.deleteLog(l.id)} style={btnDanger}>✕</button>
+                    <button onClick={() => { setLogForm({ ...l, log_date: l.log_date, labour: l.labour ?? {} }); setEditLog(l.id); setSheet('log') }} style={{ ...btnGhost, border:'none', padding:'4px 8px', fontSize:'13px' }}>✎</button>
+                    <button onClick={() => { if(confirm('Delete this log?')) pd.deleteLog(l.id) }} style={btnDanger}>✕</button>
                   </div>
                 </div>
                 <div style={{ padding:'16px' }}>
@@ -469,8 +475,8 @@ function InnerApp() {
             })}
 
             {sheet === 'log' && (
-              <Sheet title="Daily Site Log" onClose={() => setSheet(null)}
-                footer={<><button onClick={() => setSheet(null)} style={{ ...btnGhost, flex:0 }}>Cancel</button><button onClick={() => save(() => pd.addLog({ ...logForm, logged_by: user!.id }))} style={{ ...btnPrimary, flex:1, justifyContent:'center' }}>Save Log</button></>}>
+              <Sheet title={editLog ? 'Edit Site Log' : 'Daily Site Log'} onClose={() => setSheet(null)}
+                footer={<><button onClick={() => setSheet(null)} style={{ ...btnGhost, flex:0 }}>Cancel</button><button onClick={() => save(() => editLog ? pd.updateLog(editLog, logForm) : pd.addLog({ ...logForm, logged_by: user!.id }))} style={{ ...btnPrimary, flex:1, justifyContent:'center' }}>{editLog ? 'Save Changes' : 'Save Log'}</button></>}>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px' }}>
                   <FormGroup label="Date"><input style={fieldStyle} type="date" value={logForm.log_date||today()} onChange={e=>setLogForm((f:any)=>({...f,log_date:e.target.value}))}/></FormGroup>
                   <FormGroup label="Weather"><select style={{...fieldStyle,appearance:'none'}} value={logForm.weather||''} onChange={e=>setLogForm((f:any)=>({...f,weather:e.target.value}))}><option value="">—</option>{['Clear','Partly Cloudy','Cloudy','Light Rain','Heavy Rain','Hot','Windy'].map(w=><option key={w}>{w}</option>)}</select></FormGroup>
@@ -647,8 +653,9 @@ function InnerApp() {
                           </div>
                           <div style={{ fontSize:'11px', color: C.slate, marginTop:'4px' }}>{pct}%</div>
                         </td>
-                        <td style={{ padding:'11px 12px' }}>
+                        <td style={{ padding:'11px 12px', whiteSpace:'nowrap' }}>
                           <button onClick={() => { setBoqForm({...r}); setSheet('boq-edit-'+r.id) }} style={{ ...btnGhost, padding:'4px 8px', fontSize:'12px' }}>✎</button>
+                          <button onClick={() => { if(confirm('Delete this BOQ item?')) pd.deleteBOQ(r.id) }} style={{ ...btnGhost, padding:'4px 8px', fontSize:'12px', color: C.red, marginLeft:'4px' }}>✕</button>
                         </td>
                       </tr>
                     )

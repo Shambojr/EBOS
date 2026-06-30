@@ -104,6 +104,13 @@ export function useProjectData(projectId: string, currentUser: User | null) {
     return error?.message ?? null
   }
 
+  const updateLog = async (id: string, updates: Partial<DailyLog>) => {
+    const { error } = await supabase.from('daily_logs').update(updates).eq('id', id)
+    if (!error && currentUser) logActivity(currentUser, `Updated daily log`, { entityType: 'daily_log', entityId: id, projectId })
+    await fetchAll()
+    return error?.message ?? null
+  }
+
   const deleteLog = async (id: string) => {
     const { error } = await supabase.from('daily_logs').delete().eq('id', id)
     await fetchAll()
@@ -260,7 +267,7 @@ export function useProjectData(projectId: string, currentUser: User | null) {
     milestones, logs, materials, expenses, boq, documents, photos, loading,
     refetch: fetchAll,
     addMilestone, updateMilestone, deleteMilestone, toggleMilestone,
-    addLog, deleteLog,
+    addLog, updateLog, deleteLog,
     addMaterial, updateMaterial, deleteMaterial,
     addExpense, updateExpense, deleteExpense,
     addBOQ, updateBOQ, deleteBOQ,
