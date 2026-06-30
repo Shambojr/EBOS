@@ -2,7 +2,7 @@
 // Ease Builders v4 — TypeScript Types
 // ─────────────────────────────────────────────────────────────
 
-export type UserRole = 'director' | 'accountant' | 'site_engineer'
+export type UserRole = 'director' | 'accountant' | 'site_engineer' | 'supervisor' | 'office_staff'
 export type ProjectStatus = 'Active' | 'On Hold' | 'Completed'
 export type MilestonePriority = 'Low' | 'Medium' | 'High' | 'Critical'
 export type MaterialStatus = 'Pending' | 'Ordered' | 'In Transit' | 'Delivered' | 'Partially Delivered' | 'Delayed' | 'Cancelled'
@@ -37,7 +37,6 @@ export interface Project {
   created_by?: string
   created_at: string
   updated_at: string
-  // computed / joined
   total_spent?: number
   members?: ProjectMember[]
 }
@@ -139,9 +138,9 @@ export interface BOQItem {
   unit?: string
   qty?: number
   rate?: number
-  amount?: number        // generated
+  amount?: number
   exec_qty: number
-  exec_value?: number   // generated
+  exec_value?: number
   created_by?: string
   created_at: string
   updated_at: string
@@ -161,7 +160,7 @@ export interface Document {
   uploaded_by?: string
   created_at: string
   updated_at: string
-  public_url?: string   // generated from storage_path
+  public_url?: string
   uploader?: User
 }
 
@@ -174,7 +173,7 @@ export interface Photo {
   photo_date: string
   uploaded_by?: string
   created_at: string
-  public_url?: string   // generated
+  public_url?: string
   uploader?: User
 }
 
@@ -203,7 +202,6 @@ export interface ActivityLog {
   created_at: string
 }
 
-// ── Auth context shape ────────────────────────────────────────
 export interface AuthUser {
   id: string
   email: string

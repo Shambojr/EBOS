@@ -1,7 +1,4 @@
-// supabase/functions/create-user/index.ts
-// Deployed as a Supabase Edge Function.
-// Only callable by authenticated Directors (verified via JWT + role check).
-
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -9,93 +6,65 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-Deno.serve(async (req: Request) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    // 1. Verify the caller is authenticated and is a Director
+    // Only allow directors (verify caller role)
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
+    if (!authHeader) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
 
-    // Client with caller's JWT to verify role
-    const callerClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } }
-    )
-
-    const { data: { user: caller } } = await callerClient.auth.getUser()
-    if (!caller) {
-      return new Response(JSON.stringify({ error: 'Invalid token' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    const { data: callerProfile } = await callerClient
-      .from('users').select('role').eq('id', caller.id).single()
-
-    if (callerProfile?.role !== 'director') {
-      return new Response(JSON.stringify({ error: 'Only Directors can create users' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    // 2. Parse request body
-    const { email, password, full_name, role } = await req.json()
-    if (!email || !password || !full_name || !role) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    const validRoles = ['director', 'accountant', 'site_engineer']
-    if (!validRoles.includes(role)) {
-      return new Response(JSON.stringify({ error: 'Invalid role' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
-
-    // 3. Create user with service_role key (admin privileges)
-    const adminClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
-    const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,   // skip email verification
-      user_metadata: { full_name, role },
-    })
+    // Verify caller is a director
+    const callerClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    )
+    const { data: { user: caller } } = await callerClient.auth.getUser()
+    if (!caller) return new Response(JSON.stringify({ error: 'Not authenticated' }), { status: 401, headers: corsHeaders })
 
-    if (createError) {
-      return new Response(JSON.stringify({ error: createError.message }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+    const { data: callerProfile } = await supabaseAdmin.from('users').select('role').eq('id', caller.id).single()
+    if (callerProfile?.role !== 'director') {
+      return new Response(JSON.stringify({ error: 'Only directors can create users' }), { status: 403, headers: corsHeaders })
     }
 
-    // 4. Update profile (trigger auto-creates, but we set role explicitly)
-    await adminClient
-      .from('users')
-      .update({ full_name, role })
-      .eq('id', newUser.user!.id)
+    const { email, password, full_name, role } = await req.json()
+    if (!email || !password || !full_name || !role) {
+      return new Response(JSON.stringify({ error: 'email, password, full_name and role are required' }), { status: 400, headers: corsHeaders })
+    }
 
-    return new Response(
-      JSON.stringify({ success: true, userId: newUser.user!.id }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
-  } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    // Create auth user
+    const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
     })
+    if (authErr) return new Response(JSON.stringify({ error: authErr.message }), { status: 400, headers: corsHeaders })
+
+    // Create user profile
+    const { error: profileErr } = await supabaseAdmin.from('users').insert({
+      id: authData.user.id,
+      email,
+      full_name,
+      role,
+      is_active: true,
+    })
+    if (profileErr) {
+      // Rollback: delete the auth user
+      await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+      return new Response(JSON.stringify({ error: profileErr.message }), { status: 400, headers: corsHeaders })
+    }
+
+    return new Response(JSON.stringify({ success: true, user_id: authData.user.id }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    })
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: corsHeaders })
   }
 })
