@@ -1,0 +1,13 @@
+{
+  "name": "Ease Builders — Site Manager",
+  "short_name": "Ease Builders",
+  "start_url": "/EBOS/",
+  "scope": "/EBOS/",
+  "display": "standalone",
+  "background_color": "#f5f7fb",
+  "theme_color": "#0d2144",
+  "icons": [
+    { "src": "/EBOS/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/EBOS/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
