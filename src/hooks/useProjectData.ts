@@ -137,6 +137,13 @@ export function useProjectData(projectId: string, currentUser: User | null) {
     return error?.message ?? null
   }
 
+  const updateExpense = async (id: string, updates: Partial<Expense>) => {
+    const { error } = await supabase.from('expenses').update(updates).eq('id', id)
+    if (!error && currentUser) logActivity(currentUser, `Updated expense: ${updates.description ?? id}`, { entityType: 'expense', entityId: id, projectId })
+    await fetchAll()
+    return error?.message ?? null
+  }
+
   const deleteExpense = async (id: string) => {
     const { error } = await supabase.from('expenses').delete().eq('id', id)
     await fetchAll()
@@ -192,6 +199,15 @@ export function useProjectData(projectId: string, currentUser: User | null) {
     return error?.message ?? null
   }
 
+  const updateDocument = async (id: string, updates: Partial<Document>) => {
+    // Don't try to write back generated fields
+    const { public_url, uploader, ...safeUpdates } = updates as any
+    const { error } = await supabase.from('documents').update(safeUpdates).eq('id', id)
+    if (!error && currentUser) logActivity(currentUser, `Updated document: ${updates.name ?? id}`, { entityType: 'document', entityId: id, projectId })
+    await fetchAll()
+    return error?.message ?? null
+  }
+
   const deleteDocument = async (id: string) => {
     const doc = documents.find(d => d.id === id)
     if (doc?.storage_path) {
@@ -240,9 +256,9 @@ export function useProjectData(projectId: string, currentUser: User | null) {
     addMilestone, updateMilestone, deleteMilestone, toggleMilestone,
     addLog, deleteLog,
     addMaterial, updateMaterial, deleteMaterial,
-    addExpense, deleteExpense,
+    addExpense, updateExpense, deleteExpense,
     addBOQ, updateBOQ, deleteBOQ,
-    addDocument, deleteDocument,
+    addDocument, updateDocument, deleteDocument,
     addPhotos, deletePhoto,
   }
 }

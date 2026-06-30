@@ -10,6 +10,7 @@ import { can, PROJECT_TABS, NAV_TABS } from './lib/rbac'
 import { useProjectData } from './hooks/useProjectData'
 import { supabase } from './lib/supabase'
 import { logActivity } from './lib/logger'
+import { LOGO_NAVY } from './assets/logo'
 import type { Project, Milestone, UserRole } from './types'
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -152,13 +153,8 @@ function InnerApp() {
             ← <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{activeProject?.name}</span>
           </button>
         ) : (
-          <div style={{ display:'flex', alignItems:'center', gap:'8px' }}>
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-              <circle cx="14" cy="14" r="12" stroke="#1a4b8f" strokeWidth="1.2"/>
-              <path d="M14 5C17.5 5 21 8 21 14C21 19 17 23 14 23C10 23 7 19 7 14C7 9 10 6 14 5.5" stroke="#1a4b8f" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
-              <path d="M14 9C16.5 9 19 11 19 14C19 17 16.5 19 14 19C11.5 19 9 17 9 14" stroke="#c9943a" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-            </svg>
-            <div style={{ fontSize:'15px', fontWeight:800, color: C.navy }}>ease Builders</div>
+          <div style={{ display:'flex', alignItems:'center' }}>
+            <img src={LOGO_NAVY} alt="Ease Builders" style={{ height:'30px', width:'auto', display:'block' }}/>
           </div>
         )}
       </div>
@@ -518,13 +514,14 @@ function InnerApp() {
                     <div style={{ fontWeight:700, fontSize:'14px', color: C.navy }}>{fmtCur(e.amount)}</div>
                     <Badge label={e.payment_status} color={e.payment_status==='Paid'?'green':e.payment_status==='Partial'?'amber':'red'}/>
                   </div>
+                  <button onClick={() => { setExpForm({...e}); setSheet('expense-edit-'+e.id) }} style={{ ...btnGhost, padding:'4px 8px', fontSize:'12px' }}>✎</button>
                   <button onClick={() => pd.deleteExpense(e.id)} style={btnDanger}>✕</button>
                 </div>
               ))}
             </div>
-            {sheet === 'expense' && (
-              <Sheet title="Add Expense" onClose={() => setSheet(null)}
-                footer={<><button onClick={() => setSheet(null)} style={{ ...btnGhost, flex:0 }}>Cancel</button><button onClick={() => save(() => pd.addExpense(expForm))} style={{ ...btnPrimary, flex:1, justifyContent:'center' }}>Save</button></>}>
+            {(sheet === 'expense' || sheet?.startsWith('expense-edit-')) && (
+              <Sheet title={sheet === 'expense' ? 'Add Expense' : 'Edit Expense'} onClose={() => setSheet(null)}
+                footer={<><button onClick={() => setSheet(null)} style={{ ...btnGhost, flex:0 }}>Cancel</button><button onClick={() => save(() => sheet === 'expense' ? pd.addExpense(expForm) : pd.updateExpense(expForm.id, expForm))} style={{ ...btnPrimary, flex:1, justifyContent:'center' }}>Save</button></>}>
                 <FormGroup label="Description *"><input style={fieldStyle} value={expForm.description||''} onChange={e=>setExpForm((f:any)=>({...f,description:e.target.value}))}/></FormGroup>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px' }}>
                   <FormGroup label="Amount (₹) *"><input style={fieldStyle} type="number" value={expForm.amount||''} onChange={e=>setExpForm((f:any)=>({...f,amount:Number(e.target.value)}))}/></FormGroup>
@@ -630,24 +627,24 @@ function InnerApp() {
               {pd.documents.map(d => {
                 const icons: Record<string,string> = { Drawing:'📐', BOQ:'📊', Certificate:'📜', Contract:'📄', Report:'📋', Invoice:'🧾', Photo:'📸', Approval:'✅', Other:'📁' }
                 return (
-                  <div key={d.id} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'13px 16px', borderBottom:`1px solid ${C.border}`, cursor: d.external_url || d.public_url ? 'pointer' : 'default' }}
-                    onClick={() => { const url = d.external_url || d.public_url; if (url) window.open(url, '_blank') }}>
-                    <div style={{ width:'40px', height:'40px', borderRadius:'6px', background: C.mist, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px', flexShrink:0 }}>{icons[d.type] || '📁'}</div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d.name}</div>
-                      <div style={{ fontSize:'11px', color: C.slate, marginTop:'2px' }}>{d.type} · Rev {d.revision || '—'} · {d.uploader?.full_name || '—'}</div>
+                  <div key={d.id} style={{ display:'flex', alignItems:'center', gap:'12px', padding:'13px 16px', borderBottom:`1px solid ${C.border}` }}>
+                    <div onClick={() => { const url = d.external_url || d.public_url; if (url) window.open(url, '_blank') }} style={{ display:'flex', alignItems:'center', gap:'12px', flex:1, minWidth:0, cursor: d.external_url || d.public_url ? 'pointer' : 'default' }}>
+                      <div style={{ width:'40px', height:'40px', borderRadius:'6px', background: C.mist, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px', flexShrink:0 }}>{icons[d.type] || '📁'}</div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d.name}</div>
+                        <div style={{ fontSize:'11px', color: C.slate, marginTop:'2px' }}>{d.type} · Rev {d.revision || '—'} · {d.uploader?.full_name || '—'}</div>
+                      </div>
+                      {(d.external_url || d.public_url) && <span style={{ fontSize:'12px', fontWeight:600, color: C.blue, flexShrink:0 }}>Open ↗</span>}
                     </div>
-                    <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'6px' }}>
-                      {(d.external_url || d.public_url) && <span style={{ fontSize:'12px', fontWeight:600, color: C.blue }}>Open ↗</span>}
-                      <button onClick={e => { e.stopPropagation(); pd.deleteDocument(d.id) }} style={btnDanger}>✕</button>
-                    </div>
+                    <button onClick={() => { setDocForm({...d}); setSheet('document-edit-'+d.id) }} style={{ ...btnGhost, padding:'4px 8px', fontSize:'12px' }}>✎</button>
+                    <button onClick={() => pd.deleteDocument(d.id)} style={btnDanger}>✕</button>
                   </div>
                 )
               })}
             </div>
-            {sheet === 'document' && (
-              <Sheet title="Link Document" onClose={() => setSheet(null)}
-                footer={<><button onClick={() => setSheet(null)} style={{ ...btnGhost, flex:0 }}>Cancel</button><button onClick={() => save(() => pd.addDocument(docForm))} style={{ ...btnPrimary, flex:1, justifyContent:'center' }}>Save</button></>}>
+            {(sheet === 'document' || sheet?.startsWith('document-edit-')) && (
+              <Sheet title={sheet === 'document' ? 'Link Document' : 'Edit Document'} onClose={() => setSheet(null)}
+                footer={<><button onClick={() => setSheet(null)} style={{ ...btnGhost, flex:0 }}>Cancel</button><button onClick={() => save(() => sheet === 'document' ? pd.addDocument(docForm) : pd.updateDocument(docForm.id, docForm))} style={{ ...btnPrimary, flex:1, justifyContent:'center' }}>Save</button></>}>
                 <FormGroup label="Document Name *"><input style={fieldStyle} value={docForm.name||''} onChange={e=>setDocForm((f:any)=>({...f,name:e.target.value}))}/></FormGroup>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px' }}>
                   <FormGroup label="Doc Number"><input style={fieldStyle} value={docForm.doc_number||''} onChange={e=>setDocForm((f:any)=>({...f,doc_number:e.target.value}))}/></FormGroup>
@@ -665,19 +662,23 @@ function InnerApp() {
         {/* TAB: PHOTOS */}
         {localTab === 'photos' && (
           <div style={{ padding:'16px' }}>
-            <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'12px' }}>
+            <div style={{ display:'flex', justifyContent:'flex-end', gap:'8px', marginBottom:'12px' }}>
+              <label style={{ ...btnGhost, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:'6px' }}>
+                📷 Camera
+                <input type="file" accept="image/*" capture="environment" style={{ display:'none' }} onChange={e => { const files = Array.from(e.target.files||[]); if(files.length) pd.addPhotos(files) }}/>
+              </label>
               <label style={{ ...btnPrimary, cursor:'pointer' }}>
-                📸 Upload
+                🖼 Gallery
                 <input type="file" accept="image/*" multiple style={{ display:'none' }} onChange={e => { const files = Array.from(e.target.files||[]); if(files.length) pd.addPhotos(files) }}/>
               </label>
             </div>
             {!pd.photos.length && <div style={{ textAlign:'center', padding:'40px', color: C.slate }}>No photos yet.</div>}
             <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'3px' }}>
               {pd.photos.map(ph => (
-                <div key={ph.id} style={{ aspectRatio:'1', background: C.mist, borderRadius:'6px', overflow:'hidden', position:'relative', cursor:'pointer' }}
-                  onClick={() => window.open(ph.public_url, '_blank')}>
-                  <img src={ph.public_url} alt={ph.name||''} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>
+                <div key={ph.id} style={{ aspectRatio:'1', background: C.mist, borderRadius:'6px', overflow:'hidden', position:'relative', cursor:'pointer' }}>
+                  <img src={ph.public_url} alt={ph.name||''} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} onClick={() => window.open(ph.public_url, '_blank')}/>
                   <div style={{ position:'absolute', bottom:0, left:0, right:0, background:'linear-gradient(transparent,rgba(13,33,68,.7))', color:'#fff', fontSize:'9px', padding:'6px 5px 4px', fontWeight:500 }}>{ph.category}</div>
+                  <button onClick={() => { if(confirm('Delete photo?')) pd.deletePhoto(ph.id) }} style={{ position:'absolute', top:'4px', right:'4px', width:'22px', height:'22px', borderRadius:'50%', background:'rgba(220,38,38,.85)', color:'#fff', border:'none', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
                 </div>
               ))}
             </div>
@@ -817,31 +818,36 @@ function InnerApp() {
       {projects.map(p => {
         const h = projectHealth(p)
         return (
-          <div key={p.id} style={{ ...card, marginBottom:'12px', cursor:'pointer' }} onClick={() => goProject(p)}>
+          <div key={p.id} style={{ ...card, marginBottom:'12px' }}>
             <div style={{ height:'4px', background: h==='green'?C.green:h==='amber'?C.amber:C.red }}/>
-            <div style={{ background: C.navy, padding:'14px 16px' }}>
-              <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'.1em', textTransform:'uppercase', color:'rgba(255,255,255,.45)', marginBottom:'4px' }}>{p.type || 'Construction'}</div>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                <div>
-                  <div style={{ fontSize:'17px', fontWeight:800, color:'#fff', lineHeight:1.25 }}>{p.name}</div>
-                  <div style={{ fontSize:'12px', color:'rgba(255,255,255,.55)', marginTop:'3px' }}>{p.client || '—'}</div>
+            <div onClick={() => goProject(p)} style={{ cursor:'pointer' }}>
+              <div style={{ background: C.navy, padding:'14px 16px' }}>
+                <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'.1em', textTransform:'uppercase', color:'rgba(255,255,255,.45)', marginBottom:'4px' }}>{p.type || 'Construction'}</div>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+                  <div>
+                    <div style={{ fontSize:'17px', fontWeight:800, color:'#fff', lineHeight:1.25 }}>{p.name}</div>
+                    <div style={{ fontSize:'12px', color:'rgba(255,255,255,.55)', marginTop:'3px' }}>{p.client || '—'}</div>
+                  </div>
+                  <HealthBadge h={h}/>
                 </div>
-                <HealthBadge h={h}/>
+              </div>
+              <div style={{ padding:'14px 16px' }}>
+                <div style={{ display:'flex', gap:'10px', flexWrap:'wrap', marginBottom:'12px' }}>
+                  <span style={{ fontSize:'12px', color: C.slate }}>📍 {p.location || '—'}</span>
+                  <span style={{ fontSize:'12px', color: C.slate }}>📅 {fmtDate(p.end_date)}</span>
+                  {p.stage && <span style={{ fontSize:'12px', color: C.slate }}>{STAGE_ICONS[STAGES.indexOf(p.stage)] || ''} {p.stage}</span>}
+                </div>
+                <div style={{ height:'5px', background: C.mist, borderRadius:'99px', overflow:'hidden', marginBottom:'6px' }}>
+                  <div style={{ height:'100%', background: h==='green'?C.green:h==='amber'?C.amber:C.red, borderRadius:'99px', width:`${p.progress}%` }}/>
+                </div>
+                <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color: C.slate }}>
+                  <span>{p.progress}% complete</span>
+                  {p.budget && <span>{fmtCur(p.total_spent ?? 0)} of {fmtCur(p.budget)}</span>}
+                </div>
               </div>
             </div>
-            <div style={{ padding:'14px 16px' }}>
-              <div style={{ display:'flex', gap:'10px', flexWrap:'wrap', marginBottom:'12px' }}>
-                <span style={{ fontSize:'12px', color: C.slate }}>📍 {p.location || '—'}</span>
-                <span style={{ fontSize:'12px', color: C.slate }}>📅 {fmtDate(p.end_date)}</span>
-                {p.stage && <span style={{ fontSize:'12px', color: C.slate }}>{STAGE_ICONS[STAGES.indexOf(p.stage)] || ''} {p.stage}</span>}
-              </div>
-              <div style={{ height:'5px', background: C.mist, borderRadius:'99px', overflow:'hidden', marginBottom:'6px' }}>
-                <div style={{ height:'100%', background: h==='green'?C.green:h==='amber'?C.amber:C.red, borderRadius:'99px', width:`${p.progress}%` }}/>
-              </div>
-              <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color: C.slate }}>
-                <span>{p.progress}% complete</span>
-                {p.budget && <span>{fmtCur(p.total_spent ?? 0)} of {fmtCur(p.budget)}</span>}
-              </div>
+            <div style={{ padding:'0 16px 14px' }}>
+              <button onClick={() => { setProjForm({ ...p }); setEditProjId(p.id); setSheet('edit-project') }} style={{ ...btnGhost, width:'100%', justifyContent:'center' }}>✎ Edit Project</button>
             </div>
           </div>
         )
