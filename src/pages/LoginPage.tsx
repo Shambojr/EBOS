@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { LOGO_NAVY } from '../assets/logo'
 
 export function LoginPage() {
   const { signIn } = useAuth()
@@ -30,17 +31,8 @@ export function LoginPage() {
         boxShadow: '0 8px 32px rgba(13,33,68,.18)',
       }}>
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-          <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-            <circle cx="20" cy="20" r="18" stroke="#1a4b8f" strokeWidth="1.5"/>
-            <path d="M20 8C25 8 31 13 31 20C31 27 25 32 20 32C14 32 9 27 9 20C9 14 13 9.5 19 8.5" stroke="#1a4b8f" strokeWidth="2" fill="none" strokeLinecap="round"/>
-            <path d="M20 13C23 13 27 16 27 20C27 24 23 27 20 27C17 27 13 24 13 20C13 16 16 13.5 20 13" stroke="#c9943a" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-            <circle cx="20" cy="20" r="3" fill="#1a4b8f"/>
-          </svg>
-          <div>
-            <div style={{ fontSize: '19px', fontWeight: 800, color: '#0d2144', letterSpacing: '-0.01em' }}>ease Builders</div>
-            <div style={{ fontSize: '9px', fontWeight: 700, color: '#64748b', letterSpacing: '0.14em', textTransform: 'uppercase' }}>Pvt. Ltd.</div>
-          </div>
+        <div style={{ marginBottom: '24px' }}>
+          <img src={LOGO_NAVY} alt="Ease Builders Pvt. Ltd." style={{ height: '46px', width: 'auto', display: 'block' }}/>
         </div>
 
         {/* Gold rule — brochure signature */}
