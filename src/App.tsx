@@ -34,20 +34,21 @@ const PROJ_TYPES = ['MOT (Modular OT)','MGPS','HVAC','Civil','Electrical','Plumb
 
 // ── CSS-in-JS token shortcuts ──────────────────────────────────
 const C = {
-  navy:'#0d2144', blue:'#1a4b8f', gold:'#c9943a', white:'#fff',
-  ash:'#f5f7fb', mist:'#eef1f7', border:'#e2e8f3', border2:'#cdd6e8',
-  ink:'#1e293b', body:'#374151', slate:'#64748b', faint:'#94a3b8',
-  green:'#16a34a', greenBg:'#f0fdf4', amber:'#d97706', amberBg:'#fffbeb',
+  navy:'#1e3a4a', navyL:'#2a5068', navyD:'#142635', blue:'#1e40af', gold:'#c9943a', white:'#fff',
+  ash:'#f0f4f8', mist:'#e8eef4', border:'rgba(30,58,74,.10)', border2:'rgba(30,58,74,.06)',
+  ink:'#0f1f2a', body:'#2d4a5a', slate:'#5a7a8a', faint:'#8faab8',
+  green:'#0d9488', greenBg:'#f0fdf9', amber:'#d97706', amberBg:'#fffbeb',
   red:'#dc2626', redBg:'#fef2f2', teal:'#0891b2', tealBg:'#f0f9ff',
 }
-const SF = { fontFamily:"'Inter',system-ui,sans-serif", fontSize:'14px', color: C.ink }
-const goldRule = { width:'32px', height:'3px', background: C.gold, borderRadius:'2px', marginTop:'6px' }
-const btnPrimary = { padding:'9px 16px', background: C.blue, color:'#fff', border:'none', borderRadius:'6px', fontSize:'13px', fontWeight:600, cursor:'pointer', fontFamily:'inherit', display:'inline-flex', alignItems:'center', gap:'6px' }
-const btnGhost = { padding:'7px 12px', background:'transparent', color: C.slate, border:`1.5px solid ${C.border}`, borderRadius:'6px', fontSize:'12px', fontWeight:600, cursor:'pointer', fontFamily:'inherit' }
-const btnDanger = { padding:'6px 10px', background: C.redBg, color: C.red, border:'1.5px solid #fecaca', borderRadius:'6px', fontSize:'11px', fontWeight:600, cursor:'pointer', fontFamily:'inherit' }
-const fieldStyle = { width:'100%', padding:'11px 13px', border:`1.5px solid ${C.border}`, borderRadius:'6px', fontSize:'14px', color: C.ink, background:'#fff', outline:'none', fontFamily:'inherit', boxSizing:'border-box' as const }
-const fieldLabel = { display:'block' as const, fontSize:'11px', fontWeight:700, color: C.slate, letterSpacing:'.07em', textTransform:'uppercase' as const, marginBottom:'6px' }
-const card = { background:'#fff', border:`1px solid ${C.border}`, borderRadius:'12px', boxShadow:'0 1px 3px rgba(13,33,68,.07)', overflow:'hidden' }
+const SF = { fontFamily:"'Inter',system-ui,sans-serif", fontSize:'15px', color: C.ink }
+const goldRule = { width:'28px', height:'3px', background: C.gold, borderRadius:'2px', marginTop:'8px' }
+const btnPrimary = { padding:'11px 18px', background: C.navy, color:'#fff', border:'none', borderRadius:'12px', fontSize:'14px', fontWeight:600, cursor:'pointer', fontFamily:'inherit', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'7px', boxShadow:'0 2px 8px rgba(30,58,74,.25)' }
+const btnGhost = { padding:'10px 16px', background:'#fff', color: C.navy, border:`1.5px solid ${C.border}`, borderRadius:'12px', fontSize:'13px', fontWeight:600, cursor:'pointer', fontFamily:'inherit', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'7px' }
+const btnDanger = { padding:'10px 16px', background: C.redBg, color: C.red, border:'none', borderRadius:'12px', fontSize:'13px', fontWeight:600, cursor:'pointer', fontFamily:'inherit', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'7px' }
+const fieldStyle = { width:'100%', padding:'13px 14px', border:`1.5px solid ${C.border}`, borderRadius:'12px', fontSize:'15px', color: C.ink, background:'#fff', outline:'none', fontFamily:'inherit', boxSizing:'border-box' as const }
+const fieldLabel = { display:'block' as const, fontSize:'12px', fontWeight:700, color: C.slate, letterSpacing:'.06em', textTransform:'uppercase' as const, marginBottom:'7px' }
+const card = { background:'#fff', border:`1px solid ${C.border}`, borderRadius:'16px', boxShadow:'0 1px 3px rgba(15,31,42,.06), 0 1px 2px rgba(15,31,42,.04)', overflow:'hidden' }
+const heroCard = { margin:'0 16px 16px', background:`linear-gradient(135deg, ${C.navy} 0%, ${C.navyL} 100%)`, borderRadius:'24px', padding:'24px', boxShadow:'0 8px 24px rgba(15,31,42,.12), 0 4px 8px rgba(15,31,42,.06)', position:'relative' as const, overflow:'hidden' as const, color:'#fff' }
 
 // ── Status badge ───────────────────────────────────────────────
 function HealthBadge({ h }: { h: string }) {
