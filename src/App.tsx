@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { useProjects } from './hooks/useProjects'
 import { useNotifications } from './hooks/useNotifications'
@@ -158,6 +158,34 @@ function InnerApp() {
   const goProject = (p: Project) => { setActiveProject(p); setTab('overview'); setView('project') }
   const goBack = () => { setActiveProject(null); setView('projects') }
 
+  // ── SWIPE GESTURES ─────────────────────────────────────────
+  const touchRef = useRef<{ x: number; y: number } | null>(null)
+  const MAIN_ORDER = ['home', 'projects', 'finance'] as const
+  const onTouchStart = (e: React.TouchEvent) => {
+    const target = e.target as HTMLElement
+    if (target.closest('[data-no-swipe]')) { touchRef.current = null; return }
+    const t = e.touches[0]
+    touchRef.current = { x: t.clientX, y: t.clientY }
+  }
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (!touchRef.current) return
+    const t = e.changedTouches[0]
+    const dx = t.clientX - touchRef.current.x
+    const dy = t.clientY - touchRef.current.y
+    touchRef.current = null
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return
+    if (view === 'home' || view === 'projects' || view === 'finance') {
+      const idx = MAIN_ORDER.indexOf(view as any)
+      const next = dx < 0 ? idx + 1 : idx - 1
+      if (next >= 0 && next < MAIN_ORDER.length) setView(MAIN_ORDER[next])
+    } else if (view === 'project' && activeProject) {
+      const allowedTabs = PROJECT_TABS[role]
+      const idx = allowedTabs.indexOf(tab)
+      const next = dx < 0 ? idx + 1 : idx - 1
+      if (next >= 0 && next < allowedTabs.length) setTab(allowedTabs[next])
+    }
+  }
+
   // ── TOP BAR ────────────────────────────────────────────────
   const TopBar = () => (
     <div style={{ height:'52px', background:'#fff', borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 16px', position:'sticky', top:0, zIndex:30, flexShrink:0 }}>
@@ -255,8 +283,7 @@ function InnerApp() {
     const [editMat, setEditMat]   = useState<string | null>(null)
     const [editLog, setEditLog]   = useState<string | null>(null)
 
-    const [localTab, setLocalTab] = useState(tab)
-    const switchTab = (t: string) => { setLocalTab(t); setTab(t) }
+
 
     const save = async (fn: () => Promise<string | null>) => {
       const err = await fn()
@@ -268,10 +295,10 @@ function InnerApp() {
       <div style={{ flex:1, overflowY:'auto', paddingBottom:'80px' }}>
         {/* Tabs */}
         <div style={{ position:'sticky', top:'52px', zIndex:20, background:'#fff', borderBottom:`1px solid ${C.border}` }}>
-          <div style={{ overflowX:'auto', display:'flex', padding:'0 8px', WebkitOverflowScrolling:'touch' }}>
+          <div data-no-swipe="true" style={{ overflowX:'auto', display:'flex', padding:'0 8px', WebkitOverflowScrolling:'touch' }}>
             {allowedTabs.map(t => (
-              <button key={t} onClick={() => switchTab(t)}
-                style={{ padding:'10px 12px', fontSize:'13px', fontWeight: localTab===t ? 600 : 500, color: localTab===t ? C.blue : C.slate, border:'none', background:'none', borderBottom:`2px solid ${localTab===t ? C.blue : 'transparent'}`, whiteSpace:'nowrap', cursor:'pointer', fontFamily:'inherit', transition:'color .15s', marginBottom:'-1px' }}>
+              <button key={t} onClick={() => setTab(t)}
+                style={{ padding:'10px 12px', fontSize:'13px', fontWeight: tab===t ? 600 : 500, color: tab===t ? C.blue : C.slate, border:'none', background:'none', borderBottom:`2px solid ${tab===t ? C.blue : 'transparent'}`, whiteSpace:'nowrap', cursor:'pointer', fontFamily:'inherit', transition:'color .15s', marginBottom:'-1px' }}>
                 {t.charAt(0).toUpperCase()+t.slice(1)}
               </button>
             ))}
@@ -279,7 +306,7 @@ function InnerApp() {
         </div>
 
         {/* TAB: OVERVIEW */}
-        {localTab === 'overview' && (
+        {tab === 'overview' && (
           <div>
             <div style={{ height:'8px' }}/>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', padding:'0 16px' }}>
@@ -329,7 +356,7 @@ function InnerApp() {
         )}
 
         {/* TAB: STAGES */}
-        {localTab === 'stages' && (
+        {tab === 'stages' && (
           <div style={{ padding:'16px' }}>
             <div style={{ overflowX:'auto', paddingBottom:'8px' }}>
               <div style={{ display:'flex', alignItems:'flex-start', minWidth:'max-content', padding:'14px 0', gap:0 }}>
@@ -355,7 +382,7 @@ function InnerApp() {
         )}
 
         {/* TAB: MILESTONES */}
-        {localTab === 'milestones' && (
+        {tab === 'milestones' && (
           <div style={{ padding:'16px' }}>
             <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'12px' }}>
               <button style={btnPrimary} onClick={() => { setMsForm({}); setEditMs(null); setSheet('milestone') }}>＋ Add</button>
@@ -406,7 +433,7 @@ function InnerApp() {
         )}
 
         {/* TAB: LOGS */}
-        {localTab === 'logs' && (
+        {tab === 'logs' && (
           <div style={{ padding:'16px' }}>
             <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'12px' }}>
               <button style={btnPrimary} onClick={() => { setLogForm({ log_date: today(), labour: {} }); setEditLog(null); setSheet('log') }}>＋ Log</button>
@@ -501,7 +528,7 @@ function InnerApp() {
         )}
 
         {/* TAB: MATERIALS */}
-        {localTab === 'materials' && can(role,'materials') && (
+        {tab === 'materials' && can(role,'materials') && (
           <div style={{ padding:'16px' }}>
             <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'12px' }}>
               <button style={btnPrimary} onClick={() => { setMatForm({}); setEditMat(null); setSheet('material') }}>＋ Add</button>
@@ -556,7 +583,7 @@ function InnerApp() {
         )}
 
         {/* TAB: EXPENSES */}
-        {localTab === 'expenses' && can(role,'expenses') && (
+        {tab === 'expenses' && can(role,'expenses') && (
           <div style={{ padding:'16px' }}>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', marginBottom:'16px' }}>
               <div style={{ ...card, padding:'14px', position:'relative', overflow:'hidden' }}>
@@ -609,7 +636,7 @@ function InnerApp() {
         )}
 
         {/* TAB: BOQ */}
-        {localTab === 'boq' && (
+        {tab === 'boq' && (
           <div style={{ padding:'16px' }}>
             <div style={{ display:'flex', gap:'8px', justifyContent:'flex-end', marginBottom:'12px' }}>
               <label style={{ ...btnGhost, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:'6px' }}>
@@ -629,7 +656,7 @@ function InnerApp() {
               </label>
               <button style={btnPrimary} onClick={() => { setBoqForm({ exec_qty: 0 }); setSheet('boq') }}>＋ Add</button>
             </div>
-            <div style={{ overflowX:'auto' }}>
+            <div data-no-swipe="true" style={{ overflowX:'auto' }}>
               <table style={{ width:'100%', borderCollapse:'collapse', minWidth:'520px', background:'#fff', border:`1px solid ${C.border}`, borderRadius:'12px', overflow:'hidden', boxShadow:'0 1px 3px rgba(13,33,68,.07)' }}>
                 <thead>
                   <tr style={{ background: C.mist }}>
@@ -689,7 +716,7 @@ function InnerApp() {
         )}
 
         {/* TAB: DOCUMENTS */}
-        {localTab === 'documents' && (
+        {tab === 'documents' && (
           <div style={{ padding:'16px' }}>
             <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'12px' }}>
               <button style={btnPrimary} onClick={() => { setDocForm({ type:'Other', approval_status:'Draft' }); setSheet('document') }}>＋ Link</button>
@@ -740,7 +767,7 @@ function InnerApp() {
         )}
 
         {/* TAB: PHOTOS */}
-        {localTab === 'photos' && (
+        {tab === 'photos' && (
           <div style={{ padding:'16px' }}>
             <div style={{ display:'flex', justifyContent:'flex-end', gap:'8px', marginBottom:'12px' }}>
               <label style={{ ...btnGhost, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:'6px' }}>
@@ -984,7 +1011,7 @@ function InnerApp() {
   return (
     <div style={{ ...SF, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background: C.ash, maxWidth:'540px', margin:'0 auto' }}>
       <TopBar/>
-      <div style={{ flex:1, overflowY:'auto', overflowX:'hidden', WebkitOverflowScrolling:'touch' as any }}>
+      <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} style={{ flex:1, overflowY:'auto', overflowX:'hidden', WebkitOverflowScrolling:'touch' as any }}>
         {view === 'home'    && <HomeView/>}
         {view === 'projects'&& <ProjectsView/>}
         {view === 'project' && activeProject && <ProjectView project={activeProject}/>}

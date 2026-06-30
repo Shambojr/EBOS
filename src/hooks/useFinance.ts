@@ -307,6 +307,11 @@ export function useFinance(currentUser: User | null) {
     if (!error) { await fetchAll(); logActivity(currentUser!, `Cash entry: ${data.description} — ₹${data.amount}`) }
     return error?.message ?? null
   }
+  const updateCashEntry = async (id: string, data: Partial<CashBookEntry>) => {
+    const { error } = await supabase.from('cash_book').update(data).eq('id', id)
+    if (!error) { await fetchAll(); logActivity(currentUser!, `Cash entry updated: ${data.description ?? id}`) }
+    return error?.message ?? null
+  }
   const deleteCashEntry = async (id: string) => {
     const { error } = await supabase.from('cash_book').delete().eq('id', id)
     if (!error) await fetchAll()
@@ -332,7 +337,7 @@ export function useFinance(currentUser: User | null) {
     addFunding, updateFunding, deleteFunding, addRepayment,
     addReceivable, updateReceivable, deleteReceivable, addReceivablePayment,
     addPayable, updatePayable, deletePayable, addPayablePayment,
-    addCashEntry, deleteCashEntry,
+    addCashEntry, updateCashEntry, deleteCashEntry,
     addRecurring, deleteRecurring,
   }
 }

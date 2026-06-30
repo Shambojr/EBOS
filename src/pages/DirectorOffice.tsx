@@ -480,7 +480,7 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
     if (mod === 'cashbook') return (
       <div>
         <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'14px' }}>
-          <button style={btnP} onClick={() => { setForm({ txn_date:today(), txn_type:'Debit' }); setSheet('cash-entry') }}>＋ Add Entry</button>
+          <button style={btnP} onClick={() => { setForm({ txn_date:today(), txn_type:'Debit' }); setEditId(null); setSheet('cash-entry') }}>＋ Add Entry</button>
         </div>
         {/* Running total */}
         <div style={{ ...card, padding:'16px', marginBottom:'16px' }}>
@@ -503,14 +503,15 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
                 <div style={{ fontSize:'15px', fontWeight:700, color: e.txn_type==='Credit'?C.green:C.red }}>{e.txn_type==='Credit'?'+':'-'}{fmtCur(e.amount)}</div>
                 {e.reference && <div style={{ fontSize:'10px', color:C.slate }}>{e.reference}</div>}
               </div>
+              <button onClick={() => { setForm({ ...e, txn_date:e.txn_date, project_id:e.project_id??'', bank_account_id:e.bank_account_id??'' }); setEditId(e.id); setSheet('cash-entry') }} style={{ ...btnG, padding:'6px 10px' }}>✎</button>
               <button onClick={() => { if(confirm('Delete?')) fin.deleteCashEntry(e.id) }} style={btnD}>✕</button>
             </div>
           ))}
         </div>
 
         {sheet === 'cash-entry' && (
-          <Sheet title="Add Cash Book Entry" onClose={() => setSheet(null)}
-            footer={<><button onClick={() => setSheet(null)} style={{ ...btnG, flex:0 }}>Cancel</button><button onClick={() => save(() => fin.addCashEntry(form))} style={{ ...btnP, flex:1 }}>Save</button></>}>
+          <Sheet title={editId ? 'Edit Cash Book Entry' : 'Add Cash Book Entry'} onClose={() => setSheet(null)}
+            footer={<><button onClick={() => setSheet(null)} style={{ ...btnG, flex:0 }}>Cancel</button><button onClick={() => save(() => editId ? fin.updateCashEntry(editId, form) : fin.addCashEntry(form))} style={{ ...btnP, flex:1 }}>Save</button></>}>
             <Grid2>
               <FG label="Date"><input style={fieldStyle} type="date" value={gv('txn_date')||today()} onChange={e => sf('txn_date',e.target.value)}/></FG>
               <FG label="Type"><select style={{ ...fieldStyle, appearance:'none' }} value={gv('txn_type')||'Debit'} onChange={e => sf('txn_type',e.target.value)}>{['Credit','Debit','Transfer'].map(t=><option key={t}>{t}</option>)}</select></FG>
@@ -709,7 +710,7 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
       </div>
 
       {/* Module tabs */}
-      <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', display:'flex', padding:'14px 16px 0', borderBottom:`1px solid ${C.border}`, marginBottom:'16px', position:'sticky', top:0, zIndex:20, background:'#fff' }}>
+      <div data-no-swipe="true" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', display:'flex', padding:'14px 16px 0', borderBottom:`1px solid ${C.border}`, marginBottom:'16px', position:'sticky', top:0, zIndex:20, background:'#fff' }}>
         {MODULES.map(m => (
           <button key={m.key} onClick={() => setMod(m.key)}
             style={{ padding:'8px 12px', fontSize:'13px', fontWeight:mod===m.key?700:500, color:mod===m.key?C.navy:C.slate, border:'none', background:'none', borderBottom:`2px solid ${mod===m.key?C.navy:'transparent'}`, whiteSpace:'nowrap', cursor:'pointer', fontFamily:'inherit', marginBottom:'-1px', transition:'color .15s', display:'flex', alignItems:'center', gap:'6px' }}>
