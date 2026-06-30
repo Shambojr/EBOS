@@ -386,31 +386,58 @@ function InnerApp() {
               <button style={btnPrimary} onClick={() => { setLogForm({ log_date: today(), labour: {} }); setSheet('log') }}>＋ Log</button>
             </div>
             {!pd.logs.length && <div style={{ textAlign:'center', padding:'40px', color: C.slate }}>No logs yet.</div>}
-            {pd.logs.map(l => (
-              <div key={l.id} style={{ ...card, marginBottom:'12px' }}>
-                <div style={{ background: C.mist, padding:'11px 14px', borderBottom:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                  <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
-                    <div style={{ width:'28px', height:'28px', borderRadius:'50%', background: C.blue, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'10px', fontWeight:700 }}>{initials(l.logger?.full_name)}</div>
-                    <div><div style={{ fontSize:'13px', fontWeight:600 }}>{l.logger?.full_name || '—'}</div><div style={{ fontSize:'11px', color: C.slate }}>{fmtDate(l.log_date)}</div></div>
+            {pd.logs.map(l => {
+              const logPhotos = pd.photosForLog(l.id)
+              return (
+              <div key={l.id} style={{ ...card, marginBottom:'14px' }}>
+                <div style={{ background: C.mist, padding:'13px 16px', borderBottom:`1px solid ${C.border}`, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                  <div style={{ display:'flex', gap:'10px', alignItems:'center' }}>
+                    <div style={{ width:'32px', height:'32px', borderRadius:'10px', background: C.navy, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'11px', fontWeight:700 }}>{initials(l.logger?.full_name)}</div>
+                    <div><div style={{ fontSize:'14px', fontWeight:700 }}>{l.logger?.full_name || '—'}</div><div style={{ fontSize:'12px', color: C.slate }}>{fmtDate(l.log_date)}</div></div>
                   </div>
-                  <div style={{ display:'flex', gap:'6px' }}>
+                  <div style={{ display:'flex', gap:'6px', alignItems:'center' }}>
                     {l.day_progress != null && <Badge label={`${l.day_progress}%`} color="blue"/>}
                     <button onClick={() => pd.deleteLog(l.id)} style={btnDanger}>✕</button>
                   </div>
                 </div>
-                <div style={{ padding:'14px' }}>
-                  {l.achievements && <div style={{ marginBottom:'8px' }}><div style={{ fontSize:'10px', fontWeight:700, color: C.slate, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:'4px' }}>Achievements</div><div style={{ fontSize:'13px', color: C.body, lineHeight:1.6 }}>{l.achievements}</div></div>}
+                <div style={{ padding:'16px' }}>
+                  {l.achievements && <div style={{ marginBottom:'10px' }}><div style={{ fontSize:'10px', fontWeight:700, color: C.slate, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:'4px' }}>Achievements</div><div style={{ fontSize:'13px', color: C.body, lineHeight:1.6 }}>{l.achievements}</div></div>}
                   <div style={{ fontSize:'14px', color: C.body, lineHeight:1.6 }}>{l.site_update}</div>
                   <div style={{ display:'flex', flexWrap:'wrap', gap:'6px', marginTop:'10px' }}>
-                    {l.weather && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', padding:'4px 9px', background: C.mist, borderRadius:'99px', fontSize:'11px', color: C.slate, border:`1px solid ${C.border}` }}>🌤 {l.weather}</span>}
-                    {Object.values(l.labour || {}).reduce((a:number, v:any) => a+Number(v), 0) > 0 && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', padding:'4px 9px', background: C.mist, borderRadius:'99px', fontSize:'11px', color: C.slate, border:`1px solid ${C.border}` }}>👷 {Object.values(l.labour||{}).reduce((a:number,v:any)=>a+Number(v),0)}</span>}
-                    {l.client_visit && <span style={{ padding:'4px 9px', background:'#eff6ff', borderRadius:'99px', fontSize:'11px', color: C.blue, border:`1px solid #bfdbfe` }}>👤 Client Visit</span>}
-                    {l.safety_issues && <span style={{ padding:'4px 9px', background: C.redBg, borderRadius:'99px', fontSize:'11px', color: C.red, border:'1px solid #fecaca' }}>🦺 Safety Issue</span>}
+                    {l.weather && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', padding:'5px 10px', background: C.mist, borderRadius:'99px', fontSize:'11px', color: C.slate, border:`1px solid ${C.border}` }}>🌤 {l.weather}</span>}
+                    {Object.values(l.labour || {}).reduce((a:number, v:any) => a+Number(v), 0) > 0 && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', padding:'5px 10px', background: C.mist, borderRadius:'99px', fontSize:'11px', color: C.slate, border:`1px solid ${C.border}` }}>👷 {Object.values(l.labour||{}).reduce((a:number,v:any)=>a+Number(v),0)}</span>}
+                    {l.client_visit && <span style={{ padding:'5px 10px', background:'#eff6ff', borderRadius:'99px', fontSize:'11px', color: C.blue, border:`1px solid #bfdbfe` }}>👤 Client Visit</span>}
+                    {l.safety_issues && <span style={{ padding:'5px 10px', background: C.redBg, borderRadius:'99px', fontSize:'11px', color: C.red, border:'1px solid #fecaca' }}>🦺 Safety Issue</span>}
                   </div>
-                  {l.next_plan && <div style={{ marginTop:'10px', padding:'10px', background: C.tealBg, borderRadius:'6px', borderLeft:`3px solid ${C.teal}`, fontSize:'12px' }}><div style={{ fontSize:'10px', fontWeight:700, color: C.slate, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:'2px' }}>Tomorrow</div>{l.next_plan}</div>}
+                  {l.next_plan && <div style={{ marginTop:'10px', padding:'10px', background: C.tealBg, borderRadius:'10px', borderLeft:`3px solid ${C.teal}`, fontSize:'12px' }}><div style={{ fontSize:'10px', fontWeight:700, color: C.slate, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:'2px' }}>Tomorrow</div>{l.next_plan}</div>}
+
+                  {/* Photo thumbnails attached to this log */}
+                  {logPhotos.length > 0 && (
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'6px', marginTop:'12px' }}>
+                      {logPhotos.map(ph => (
+                        <div key={ph.id} style={{ aspectRatio:'1', background: C.mist, borderRadius:'10px', overflow:'hidden', position:'relative', cursor:'pointer' }}>
+                          <img src={ph.public_url} alt={ph.name||''} loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} onClick={() => window.open(ph.public_url, '_blank')}/>
+                          <button onClick={() => { if(confirm('Delete photo?')) pd.deletePhoto(ph.id) }} style={{ position:'absolute', top:'3px', right:'3px', width:'18px', height:'18px', borderRadius:'50%', background:'rgba(220,38,38,.85)', color:'#fff', border:'none', fontSize:'10px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Camera / Gallery buttons */}
+                  <div style={{ display:'flex', gap:'8px', marginTop:'12px' }}>
+                    <label style={{ ...btnGhost, cursor:'pointer' }}>
+                      📷 Camera
+                      <input type="file" accept="image/*" capture="environment" style={{ display:'none' }} onChange={e => { const files = Array.from(e.target.files||[]); if(files.length) pd.addPhotos(files, 'General', l.id) }}/>
+                    </label>
+                    <label style={{ ...btnGhost, cursor:'pointer' }}>
+                      🖼 Gallery
+                      <input type="file" accept="image/*" multiple style={{ display:'none' }} onChange={e => { const files = Array.from(e.target.files||[]); if(files.length) pd.addPhotos(files, 'General', l.id) }}/>
+                    </label>
+                  </div>
                 </div>
               </div>
-            ))}
+              )
+            })}
 
             {sheet === 'log' && (
               <Sheet title="Daily Site Log" onClose={() => setSheet(null)}

@@ -58,6 +58,7 @@ export function useProjectData(projectId: string, currentUser: User | null) {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'milestones', filter: `project_id=eq.${projectId}` }, fetchAll)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_logs', filter: `project_id=eq.${projectId}` }, fetchAll)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'materials', filter: `project_id=eq.${projectId}` }, fetchAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'photos', filter: `project_id=eq.${projectId}` }, fetchAll)
       .subscribe()
     return () => { supabase.removeChannel(ch) }
   }, [projectId, fetchAll])
@@ -219,7 +220,8 @@ export function useProjectData(projectId: string, currentUser: User | null) {
   }
 
   // ── PHOTO ACTIONS ──────────────────────────────────────────
-  const addPhotos = async (files: File[], category = 'General') => {
+  // logId is optional: when provided, the photo is linked to that specific daily log entry.
+  const addPhotos = async (files: File[], category = 'General', logId?: string) => {
     const uploads = files.map(async (file) => {
       const path = `${projectId}/${Date.now()}-${file.name}`
       // Compress image before upload
@@ -228,6 +230,7 @@ export function useProjectData(projectId: string, currentUser: User | null) {
       if (uploadErr) return
       await supabase.from('photos').insert({
         project_id: projectId,
+        log_id: logId ?? null,
         storage_path: path,
         name: file.name,
         category,
@@ -250,6 +253,9 @@ export function useProjectData(projectId: string, currentUser: User | null) {
     return error?.message ?? null
   }
 
+  // Helper: photos attached to a specific log entry
+  const photosForLog = (logId: string) => photos.filter(p => (p as any).log_id === logId)
+
   return {
     milestones, logs, materials, expenses, boq, documents, photos, loading,
     refetch: fetchAll,
@@ -259,7 +265,7 @@ export function useProjectData(projectId: string, currentUser: User | null) {
     addExpense, updateExpense, deleteExpense,
     addBOQ, updateBOQ, deleteBOQ,
     addDocument, updateDocument, deleteDocument,
-    addPhotos, deletePhoto,
+    addPhotos, deletePhoto, photosForLog,
   }
 }
 
