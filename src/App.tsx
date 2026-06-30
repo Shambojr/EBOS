@@ -127,6 +127,19 @@ function RangeField({ label: lbl, id, value, onChange }: { label: string; id: st
   )
 }
 
+function EmptyState({ icon, title, body, ctaLabel, onCta }: { icon: React.ReactNode; title: string; body?: string; ctaLabel?: string; onCta?: () => void }) {
+  return (
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'48px 32px', textAlign:'center' }}>
+      <div style={{ width:'64px', height:'64px', background: C.mist, borderRadius:'18px', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'20px' }}>
+        <span style={{ width:'28px', height:'28px', color: C.slate, display:'flex' }}>{icon}</span>
+      </div>
+      <div style={{ fontSize:'17px', fontWeight:700, color: C.ink, marginBottom:'8px' }}>{title}</div>
+      {body && <div style={{ fontSize:'14px', color: C.slate, lineHeight:1.6, marginBottom:'24px', maxWidth:'280px' }}>{body}</div>}
+      {ctaLabel && onCta && <button style={btnPrimary} onClick={onCta}>{ctaLabel}</button>}
+    </div>
+  )
+}
+
 // ── Main Inner App (after auth) ────────────────────────────────
 function InnerApp() {
   const { user, signOut } = useAuth()
@@ -343,7 +356,15 @@ function InnerApp() {
             <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'12px' }}>
               <button style={btnPrimary} onClick={() => { setMsForm({}); setEditMs(null); setSheet('milestone') }}>＋ Add</button>
             </div>
-            {!pd.milestones.length && <div style={{ textAlign:'center', padding:'40px', color: C.slate }}>No milestones yet.</div>}
+            {!pd.milestones.length && (
+              <EmptyState
+                icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>}
+                title="No Milestones Yet"
+                body="Track key project checkpoints and deadlines."
+                ctaLabel="+ Add First Milestone"
+                onCta={() => { setMsForm({}); setEditMs(null); setSheet('milestone') }}
+              />
+            )}
             <div style={{ ...card }}>
               {pd.milestones.map(m => {
                 const over = !m.done && isOverdue(m.due_date)
@@ -385,7 +406,15 @@ function InnerApp() {
             <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'12px' }}>
               <button style={btnPrimary} onClick={() => { setLogForm({ log_date: today(), labour: {} }); setSheet('log') }}>＋ Log</button>
             </div>
-            {!pd.logs.length && <div style={{ textAlign:'center', padding:'40px', color: C.slate }}>No logs yet.</div>}
+            {!pd.logs.length && (
+              <EmptyState
+                icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>}
+                title="No Logs Yet"
+                body="Record daily site activity."
+                ctaLabel="+ Add First Log"
+                onCta={() => { setLogForm({ log_date: today(), labour: {} }); setSheet('log') }}
+              />
+            )}
             {pd.logs.map(l => {
               const logPhotos = pd.photosForLog(l.id)
               return (
@@ -471,7 +500,15 @@ function InnerApp() {
             <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'12px' }}>
               <button style={btnPrimary} onClick={() => { setMatForm({}); setEditMat(null); setSheet('material') }}>＋ Add</button>
             </div>
-            {!pd.materials.length && <div style={{ textAlign:'center', padding:'40px', color: C.slate }}>No materials tracked.</div>}
+            {!pd.materials.length && (
+              <EmptyState
+                icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>}
+                title="No Materials"
+                body="Track procurement and deliveries."
+                ctaLabel="+ Add Material"
+                onCta={() => { setMatForm({}); setEditMat(null); setSheet('material') }}
+              />
+            )}
             {pd.materials.map(m => (
               <div key={m.id} style={{ ...card, marginBottom:'10px' }}>
                 <div style={{ padding:'12px 14px' }}>
@@ -650,7 +687,15 @@ function InnerApp() {
             <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'12px' }}>
               <button style={btnPrimary} onClick={() => { setDocForm({ type:'Other', approval_status:'Draft' }); setSheet('document') }}>＋ Link</button>
             </div>
-            {!pd.documents.length && <div style={{ textAlign:'center', padding:'40px', color: C.slate }}>No documents linked yet.</div>}
+            {!pd.documents.length && (
+              <EmptyState
+                icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>}
+                title="No Documents"
+                body="Link drawings, certificates and contracts."
+                ctaLabel="+ Link Document"
+                onCta={() => { setDocForm({ type:'Other', approval_status:'Draft' }); setSheet('document') }}
+              />
+            )}
             <div style={{ ...card }}>
               {pd.documents.map(d => {
                 const icons: Record<string,string> = { Drawing:'📐', BOQ:'📊', Certificate:'📜', Contract:'📄', Report:'📋', Invoice:'🧾', Photo:'📸', Approval:'✅', Other:'📁' }
