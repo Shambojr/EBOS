@@ -242,13 +242,40 @@ export function useFinance(currentUser: User | null) {
   }
 
   // ── RECEIVABLE ACTIONS ──────────────────────────────────────
-  const addReceivable = async (data: Partial<Receivable>) => {
-    const { error } = await supabase.from('receivables').insert({ ...data, created_by: currentUser?.id, amount_received: 0 })
+  const uploadBillPhoto = async (file: File): Promise<string | null> => {
+    const compressed = await compressImageFile(file, 1000, 0.75)
+    const path = `bills/${Date.now()}-${file.name}`
+    const { error } = await supabase.storage.from('photos').upload(path, compressed)
+    if (error) return null
+    return path
+  }
+
+  const addReceivable = async (data: Partial<Receivable>, billPhotoFile?: File | null) => {
+    let bill_photo_path: string | undefined
+    if (billPhotoFile) {
+      const path = await uploadBillPhoto(billPhotoFile)
+      if (path) bill_photo_path = path
+    }
+    const { error } = await supabase.from('receivables').insert({ ...data, bill_photo_path, created_by: currentUser?.id, amount_received: 0 })
     if (!error) { await fetchAll(); logActivity(currentUser!, `Receivable added: ${data.bill_number}`) }
     return error?.message ?? null
   }
-  const updateReceivable = async (id: string, data: Partial<Receivable>) => {
-    const { error } = await supabase.from('receivables').update(data).eq('id', id)
+  const updateReceivable = async (id: string, data: Partial<Receivable>, billPhotoFile?: File | null) => {
+    const updates: any = { ...data }
+    if (billPhotoFile) {
+      const path = await uploadBillPhoto(billPhotoFile)
+      if (path) updates.bill_photo_path = path
+    }
+    const { error } = await supabase.from('receivables').update(updates).eq('id', id)
+    if (!error) await fetchAll()
+    return error?.message ?? null
+  }
+  const removeBillPhoto = async (id: string) => {
+    const r = receivables.find(x => x.id === id) as any
+    if (r?.bill_photo_path) {
+      await supabase.storage.from('photos').remove([r.bill_photo_path])
+    }
+    const { error } = await supabase.from('receivables').update({ bill_photo_path: null }).eq('id', id)
     if (!error) await fetchAll()
     return error?.message ?? null
   }
@@ -335,9 +362,30 @@ export function useFinance(currentUser: User | null) {
     summary, buildForecast, refetch: fetchAll,
     addAccount, updateAccount, deleteAccount,
     addFunding, updateFunding, deleteFunding, addRepayment,
-    addReceivable, updateReceivable, deleteReceivable, addReceivablePayment,
+    addReceivable, updateReceivable, deleteReceivable, addReceivablePayment, removeBillPhoto,
     addPayable, updatePayable, deletePayable, addPayablePayment,
     addCashEntry, updateCashEntry, deleteCashEntry,
     addRecurring, deleteRecurring,
   }
+}
+
+
+// ── Image compression helper (mirrors useProjectData's compressImage) ──
+async function compressImageFile(file: File, maxWidth: number, quality: number): Promise<Blob> {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let w = img.width, h = img.height
+        if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth }
+        canvas.width = w; canvas.height = h
+        canvas.getContext('2d')!.drawImage(img, 0, 0, w, h)
+        canvas.toBlob((blob) => resolve(blob ?? file), 'image/jpeg', quality)
+      }
+      img.src = e.target!.result as string
+    }
+    reader.readAsDataURL(file)
+  })
 }

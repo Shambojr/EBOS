@@ -95,6 +95,8 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
   const [selectedFunding, setSelectedFunding] = useState<Funding | null>(null)
   const [selectedReceivable, setSelectedReceivable] = useState<Receivable | null>(null)
   const [selectedPayable, setSelectedPayable] = useState<Payable | null>(null)
+  const [billPhotoFile, setBillPhotoFile] = useState<File | null>(null)
+  const [billPhotoPreview, setBillPhotoPreview] = useState<string | null>(null)
 
   function sf(key: string, val: any) { setForm((f: any) => ({ ...f, [key]: val })) }
   function gv(key: string) { return form[key] ?? '' }
@@ -327,7 +329,7 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
     if (mod === 'receivables') return (
       <div>
         <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'14px' }}>
-          <button style={btnP} onClick={() => { setForm({ bill_date:today(), retention_pct:0, gst_amount:0, status:'Draft' }); setEditId(null); setSheet('receivable') }}>＋ Add Bill</button>
+          <button style={btnP} onClick={() => { setForm({ bill_date:today(), retention_pct:0, gst_amount:0, status:'Draft' }); setEditId(null); setBillPhotoFile(null); setBillPhotoPreview(null); setSheet('receivable') }}>＋ Add Bill</button>
         </div>
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'16px' }}>
           <SumCard label="Total Outstanding" value={fmtCur(s.outstandingReceivables)}/>
@@ -356,10 +358,24 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
                 {r.gst_amount > 0 && <span>GST: {fmtCur(r.gst_amount)}</span>}
               </div>
               {r.remarks && <div style={{ marginTop:'10px', fontSize:'12px', color:C.slate }}>{r.remarks}</div>}
+              {(r as any).bill_photo_path && (
+                <div style={{ marginTop:'12px', position:'relative' }}>
+                  <img
+                    src={`https://yvllrkopqcmiynofayif.supabase.co/storage/v1/object/public/photos/${(r as any).bill_photo_path}`}
+                    alt="Bill scan"
+                    style={{ width:'100%', maxHeight:'180px', objectFit:'cover', borderRadius:'12px', cursor:'pointer', border:`1px solid ${C.border}` }}
+                    onClick={() => window.open(`https://yvllrkopqcmiynofayif.supabase.co/storage/v1/object/public/photos/${(r as any).bill_photo_path}`, '_blank')}
+                  />
+                  <div style={{ fontSize:'11px', color:C.slate, marginTop:'5px', display:'flex', alignItems:'center', gap:'8px' }}>
+                    📎 Bill scan attached
+                    <button onClick={() => { if(confirm('Remove this bill scan?')) fin.removeBillPhoto(r.id) }} style={{ background:'none', border:'none', color:C.red, fontSize:'11px', cursor:'pointer', textDecoration:'underline', padding:0 }}>Remove</button>
+                  </div>
+                </div>
+              )}
             </div>
             <div style={{ padding:'12px 16px', display:'flex', gap:'8px', flexWrap:'wrap', borderTop:`1px solid ${C.border}` }}>
               {r.status !== 'Paid' && <button style={btnP} onClick={() => { setSelectedReceivable(r); setForm({ amount:r.balance, payment_date:today() }); setSheet('recv-pay') }}>Record Payment</button>}
-              <button style={btnG} onClick={() => { setForm({ ...r, bill_date:r.bill_date, submitted_date:r.submitted_date??'', expected_date:r.expected_date??'', project_id:r.project_id }); setEditId(r.id); setSheet('receivable') }}>Edit</button>
+              <button style={btnG} onClick={() => { setForm({ ...r, bill_date:r.bill_date, submitted_date:r.submitted_date??'', expected_date:r.expected_date??'', project_id:r.project_id }); setEditId(r.id); setBillPhotoFile(null); setBillPhotoPreview(null); setSheet('receivable') }}>Edit</button>
               <button style={btnD} onClick={() => { if(confirm('Delete?')) fin.deleteReceivable(r.id) }}>Delete</button>
             </div>
           </div>
@@ -367,7 +383,26 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
 
         {sheet === 'receivable' && (
           <Sheet title={editId ? 'Edit Bill' : 'Add Running Bill'} onClose={() => setSheet(null)}
-            footer={<><button onClick={() => setSheet(null)} style={{ ...btnG, flex:0 }}>Cancel</button><button onClick={() => save(() => editId ? fin.updateReceivable(editId, form) : fin.addReceivable(form))} style={{ ...btnP, flex:1 }}>Save</button></>}>
+            footer={<><button onClick={() => setSheet(null)} style={{ ...btnG, flex:0 }}>Cancel</button><button onClick={() => save(async () => { const err = editId ? await fin.updateReceivable(editId, form, billPhotoFile) : await fin.addReceivable(form, billPhotoFile); setBillPhotoFile(null); setBillPhotoPreview(null); return err })} style={{ ...btnP, flex:1 }}>Save</button></>}>
+            <FG label="Bill Scan (optional)">
+              {billPhotoPreview ? (
+                <div style={{ position:'relative', marginBottom:'10px' }}>
+                  <img src={billPhotoPreview} alt="Bill preview" style={{ width:'100%', maxHeight:'180px', objectFit:'cover', borderRadius:'12px', border:`1px solid ${C.border}` }}/>
+                  <button onClick={() => { setBillPhotoFile(null); setBillPhotoPreview(null) }} style={{ position:'absolute', top:'8px', right:'8px', background:'rgba(220,38,38,.9)', color:'#fff', border:'none', borderRadius:'8px', padding:'5px 10px', fontSize:'12px', cursor:'pointer' }}>Remove</button>
+                </div>
+              ) : (
+                <div style={{ display:'flex', gap:'8px' }}>
+                  <label style={{ ...btnG, cursor:'pointer', flex:1 }}>
+                    📷 Camera
+                    <input type="file" accept="image/*" capture="environment" style={{ display:'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) { setBillPhotoFile(f); setBillPhotoPreview(URL.createObjectURL(f)) } }}/>
+                  </label>
+                  <label style={{ ...btnG, cursor:'pointer', flex:1 }}>
+                    🖼 Gallery
+                    <input type="file" accept="image/*" style={{ display:'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) { setBillPhotoFile(f); setBillPhotoPreview(URL.createObjectURL(f)) } }}/>
+                  </label>
+                </div>
+              )}
+            </FG>
             <Grid2>
               <FG label="Project"><select style={{ ...fieldStyle, appearance:'none' }} value={gv('project_id')||''} onChange={e => { sf('project_id',e.target.value); sf('client_name', projects.find(p=>p.id===e.target.value)?.client||gv('client_name')) }}><option value="">—</option>{projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></FG>
               <FG label="Client Name *"><input style={fieldStyle} value={gv('client_name')||''} onChange={e => sf('client_name',e.target.value)}/></FG>
