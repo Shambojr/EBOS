@@ -49,12 +49,12 @@ export function Sheet({ title, children, onClose, footer }: SheetProps) {
       style={{ position:'fixed', inset:0, background: colors.bgOverlay, zIndex: 100, display:'flex', alignItems:'flex-end', backdropFilter:'blur(4px)', WebkitBackdropFilter:'blur(4px)' } as React.CSSProperties}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <style>{`@keyframes ebSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}} @keyframes ebBackdrop{from{opacity:0}to{opacity:1}}`}</style>
+
       <div style={{
         background: colors.bgSurface, width: '100%',
         borderRadius: `${radius.xxl} ${radius.xxl} 0 0`,
         maxHeight: '94vh', display: 'flex', flexDirection: 'column',
-        animation: `ebSheetUp ${motion.smooth} both`,
+        /* No slide animation - avoids re-triggering on keyboard/re-render */
         fontFamily: "'Inter', system-ui, sans-serif",
         boxShadow: '0 -4px 40px rgba(15,31,42,.12)',
       }}>
