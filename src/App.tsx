@@ -78,6 +78,7 @@ function InnerApp() {
   const [tab, setTab] = useState('overview')
   const [sheet, setSheet] = useState<string | null>(null)
   const [showNotifs, setShowNotifs] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
 
   const role = user!.profile.role as UserRole
   const navTabs = NAV_TABS[role]
@@ -115,61 +116,77 @@ function InnerApp() {
 
   // ── TOP BAR ────────────────────────────────────────────────
   const TopBar = () => (
-    <div style={{ height:'52px', background:'#fff', borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 16px', position:'sticky', top:0, zIndex:30, flexShrink:0 }}>
-      <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
+    <div style={{ height:'52px', background:'#fff', borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 12px 0 16px', position:'sticky', top:0, zIndex:30, flexShrink:0 }}>
+      {/* Left */}
+      <div style={{ display:'flex', alignItems:'center', gap:'8px', flex:1, minWidth:0 }}>
         {view === 'project' ? (
-          <button onClick={goBack} style={{ display:'flex', alignItems:'center', gap:'6px', fontSize:'14px', fontWeight:600, color: C.blue, background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', maxWidth:'200px' }}>
-            ← <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{activeProject?.name}</span>
+          <button onClick={goBack} style={{ display:'flex', alignItems:'center', gap:'5px', fontSize:'14px', fontWeight:600, color: C.navy, background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', minWidth:0 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{activeProject?.name}</span>
           </button>
         ) : (
-          <div style={{ display:'flex', alignItems:'center' }}>
-            <img src={LOGO_NAVY} alt="Ease Builders" style={{ height:'30px', width:'auto', display:'block' }}/>
-          </div>
+          <img src={LOGO_NAVY} alt="Ease Builders" style={{ height:'28px', width:'auto', display:'block' }}/>
         )}
       </div>
-      <div style={{ display:'flex', alignItems:'center', gap:'4px' }}>
+      {/* Right */}
+      <div style={{ display:'flex', alignItems:'center', gap:'2px' }}>
         {view === 'project' && activeProject && (
-          <button onClick={() => { setProjForm({ ...activeProject }); setEditProjId(activeProject.id); setSheet('edit-project') }} style={{ ...btnGhost, fontSize:'12px', padding:'6px 12px' }}>✎ Edit</button>
+          <button onClick={() => { setProjForm({ ...activeProject }); setEditProjId(activeProject.id); setSheet('edit-project') }}
+            style={{ padding:'6px 10px', background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:'13px', fontWeight:600, color: C.slate, borderRadius:'8px' }}>Edit</button>
         )}
-        <SyncIndicator status={syncStatus} pending={pending}/>
-        <button onClick={() => setShowNotifs(true)} style={{ ...btnGhost, border:'none', background:'none', position:'relative', padding:'8px' }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.slate} strokeWidth="1.8" strokeLinecap="round">
+        {/* Online dot */}
+        <div style={{ display:'flex', alignItems:'center', gap:'4px', padding:'6px 8px' }}>
+          <div style={{ width:'7px', height:'7px', borderRadius:'50%', background: syncStatus === 'online' ? C.green : syncStatus === 'offline' ? C.red : C.amber }}/>
+        </div>
+        {/* Notifications */}
+        <button onClick={() => setShowNotifs(true)}
+          style={{ width:'36px', height:'36px', display:'flex', alignItems:'center', justifyContent:'center', background:'none', border:'none', cursor:'pointer', borderRadius:'10px', position:'relative' }}>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke={C.slate} strokeWidth="1.8" strokeLinecap="round">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
           </svg>
-          {unreadCount > 0 && <span style={{ position:'absolute', top:'6px', right:'6px', width:'7px', height:'7px', borderRadius:'50%', background: C.red, border:'1.5px solid #fff' }}/>}
+          {unreadCount > 0 && <span style={{ position:'absolute', top:'7px', right:'7px', width:'6px', height:'6px', borderRadius:'50%', background: C.red }}/>}
         </button>
-        <button onClick={signOut} style={{ ...btnGhost, fontSize:'12px', padding:'6px 10px' }}>Sign Out</button>
+        {/* Avatar → profile sheet */}
+        <button onClick={() => setShowProfile(true)}
+          style={{ width:'32px', height:'32px', borderRadius:'10px', background: C.navy, color:'#fff', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:'12px', fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', marginLeft:'2px' }}>
+          {initials(user?.profile.full_name)}
+        </button>
       </div>
     </div>
   )
 
   // ── BOTTOM NAV ─────────────────────────────────────────────
+  const NAV_ICONS: Record<string, JSX.Element> = {
+    home:     <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+    projects: <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
+    logs:     <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
+    finance:  <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+    activity: <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+    more:     <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>,
+  }
   const BottomNav = () => (
-    <nav style={{ height:'60px', background:'#fff', borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'flex-start', paddingTop:'8px', position:'sticky', bottom:0, zIndex:30, flexShrink:0 }}>
-      {navTabs.map((tab, i) => {
+    <nav style={{ height:'64px', background:'#fff', borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center', paddingBottom:'env(safe-area-inset-bottom,0px)', position:'sticky', bottom:0, zIndex:30, flexShrink:0 }}>
+      {navTabs.map((t, i) => {
         if (i === Math.floor(navTabs.length / 2)) {
           return (
             <div key="fab" style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center' }}>
               <button
                 onClick={() => view === 'project' ? setSheet('quick-add') : setSheet('new-project')}
-                style={{ width:'48px', height:'48px', background: C.blue, color:'#fff', borderRadius:'50%', border:'none', fontSize:'24px', cursor:'pointer', marginTop:'-16px', boxShadow:'0 4px 16px rgba(26,75,143,.45)', display:'flex', alignItems:'center', justifyContent:'center' }}
+                style={{ width:'50px', height:'50px', background: C.navy, color:'#fff', borderRadius:'16px', border:'none', fontSize:'24px', cursor:'pointer', marginTop:'-18px', boxShadow:'0 4px 16px rgba(30,58,74,.35)', display:'flex', alignItems:'center', justifyContent:'center', transition:'transform 0.12s ease' }}
+                onTouchStart={e=>(e.currentTarget.style.transform='scale(.93)')}
+                onTouchEnd={e=>(e.currentTarget.style.transform='scale(1)')}
               >＋</button>
             </div>
           )
         }
-        const icons: Record<string, JSX.Element> = {
-          home: <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
-          projects: <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
-          logs: <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
-          finance: <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
-          activity: <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
-          more: <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>,
-        }
-        const isActive = view === tab.key
+        const isActive = view === t.key
         return (
-          <div key={tab.key} onClick={() => setView(tab.key as any)} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'3px', padding:'4px 0', fontSize:'10px', fontWeight:600, color: isActive ? C.blue : C.slate, cursor:'pointer', transition:'color .15s' }}>
-            <span style={{ color: isActive ? C.blue : C.slate }}>{icons[tab.key]}</span>
-            {tab.label}
+          <div key={t.key} onClick={() => setView(t.key as any)}
+            style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px', padding:'6px 0', cursor:'pointer', WebkitTapHighlightColor:'transparent' as any }}>
+            <div style={{ padding:'4px 10px', borderRadius:'10px', background: isActive ? C.mist : 'transparent', transition:'background 0.15s ease', color: isActive ? C.navy : C.slate }}>
+              {NAV_ICONS[t.key]}
+            </div>
+            <span style={{ fontSize:'10px', fontWeight: isActive ? 700 : 500, color: isActive ? C.navy : C.slate, transition:'color 0.15s ease' }}>{t.label}</span>
           </div>
         )
       })}
@@ -178,16 +195,58 @@ function InnerApp() {
 
   // ── NOTIFICATION PANEL ─────────────────────────────────────
   const NotifPanel = () => showNotifs ? (
-    <Sheet title="Notifications" onClose={() => setShowNotifs(false)}>
-      {!notifications.length && <div style={{ textAlign:'center', padding:'32px 0', color: C.slate }}>✅ All clear!</div>}
-      {notifications.map(n => (
-        <div key={n.id} onClick={() => { setShowNotifs(false) }} style={{ padding:'12px 0', borderBottom:`1px solid ${C.border}`, cursor:'pointer', opacity: n.is_read ? 0.6 : 1 }}>
-          <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'.08em', textTransform:'uppercase', color: C.amber, marginBottom:'3px' }}>{n.type.replace(/_/g,' ')}</div>
-          <div style={{ fontSize:'13px', fontWeight:600, marginBottom:'2px' }}>{n.title}</div>
-          <div style={{ fontSize:'12px', color: C.slate }}>{n.message}</div>
+    <Sheet title="Notifications" onClose={() => setShowNotifs(false)}
+      footer={notifications.length > 0 ? <button onClick={markAllRead} style={{ ...btnPrimary, flex:1 }}>Mark all read</button> : undefined}>
+      {!notifications.length ? (
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'48px 24px', textAlign:'center' }}>
+          <div style={{ width:'56px', height:'56px', borderRadius:'16px', background: C.mist, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'16px' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.slate} strokeWidth="1.5" strokeLinecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          </div>
+          <div style={{ fontSize:'16px', fontWeight:700, color: C.navy, marginBottom:'6px' }}>All caught up</div>
+          <div style={{ fontSize:'13px', color: C.slate, lineHeight:1.6 }}>No new notifications right now.</div>
+        </div>
+      ) : notifications.map(n => (
+        <div key={n.id} onClick={() => setShowNotifs(false)}
+          style={{ display:'flex', gap:'12px', padding:'14px 0', borderBottom:`1px solid ${C.border}`, cursor:'pointer', opacity: n.is_read ? 0.55 : 1 }}>
+          <div style={{ width:'8px', height:'8px', borderRadius:'50%', background: n.is_read ? 'transparent' : C.amber, marginTop:'5px', flexShrink:0 }}/>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'.07em', textTransform:'uppercase', color: C.amber, marginBottom:'3px' }}>{n.type.replace(/_/g,' ')}</div>
+            <div style={{ fontSize:'14px', fontWeight:600, color: C.navy, marginBottom:'3px' }}>{n.title}</div>
+            <div style={{ fontSize:'13px', color: C.slate, lineHeight:1.5 }}>{n.message}</div>
+          </div>
         </div>
       ))}
-      {notifications.length > 0 && <button onClick={markAllRead} style={{ ...btnGhost, width:'100%', justifyContent:'center', marginTop:'12px' }}>Mark all read</button>}
+    </Sheet>
+  ) : null
+
+  // ── PROFILE SHEET ──────────────────────────────────────────
+  const ProfileSheet = () => showProfile ? (
+    <Sheet title="Account" onClose={() => setShowProfile(false)}>
+      <div style={{ display:'flex', gap:'14px', alignItems:'center', padding:'4px 0 20px' }}>
+        <div style={{ width:'52px', height:'52px', borderRadius:'16px', background: C.navy, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', fontWeight:700, flexShrink:0 }}>
+          {initials(user?.profile.full_name)}
+        </div>
+        <div>
+          <div style={{ fontSize:'17px', fontWeight:700, color: C.navy }}>{user?.profile.full_name}</div>
+          <div style={{ fontSize:'13px', color: C.slate, marginTop:'2px' }}>{user?.email}</div>
+          <div style={{ display:'inline-block', marginTop:'6px', padding:'2px 10px', borderRadius:'99px', background: C.mist, fontSize:'11px', fontWeight:600, color: C.slate, textTransform:'capitalize' }}>
+            {role.replace(/_/g,' ')}
+          </div>
+        </div>
+      </div>
+      <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:'16px' }}>
+        <div style={{ fontSize:'11px', fontWeight:700, color: C.slate, letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'8px' }}>App</div>
+        <div style={{ fontSize:'12px', color: C.slate, lineHeight:1.8 }}>
+          Ease Builders Site Manager<br/>
+          Secured by Supabase · Real-time sync
+        </div>
+      </div>
+      <div style={{ marginTop:'24px' }}>
+        <button onClick={() => { setShowProfile(false); signOut() }}
+          style={{ ...btnDanger, width:'100%', justifyContent:'center', height:'44px' }}>
+          Sign Out
+        </button>
+      </div>
     </Sheet>
   ) : null
 
@@ -774,23 +833,18 @@ function InnerApp() {
   // ── HOME VIEW ──────────────────────────────────────────────
   const HomeView = () => (
     <div style={{ paddingBottom:'80px' }}>
-      <div style={{ height:'8px' }}/>
-      <div style={{ padding:'0 16px', marginBottom:'16px' }}>
-        <div style={{ fontSize:'22px', fontWeight:800, color: C.navy, letterSpacing:'-0.025em' }}>Command Center</div>
-        <div style={{ ...goldRule }}/>
-        <div style={{ fontSize:'12px', color: C.slate, marginTop:'4px' }}>{new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}</div>
+      <div style={{ padding:'20px 16px 4px' }}>
+        <div style={{ fontSize:'26px', fontWeight:800, color: C.navy, letterSpacing:'-0.025em', lineHeight:1.2 }}>Command Center</div>
+        <div style={{ fontSize:'13px', color: C.slate, marginTop:'4px' }}>{new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}</div>
       </div>
       {!projects.length ? (
-        <div style={{ padding:'0 16px' }}>
-          {[['🏗','Create First Project','Add your first construction project'],['📊','Import BOQ','Upload Bill of Quantities'],['📝','Add Daily Log','Record site activity']].map(([ic,t,s]) => (
-            <div key={t} onClick={() => { setProjForm({}); setEditProjId(null); setSheet('new-project') }}
-              style={{ border:`1.5px dashed ${C.border2}`, borderRadius:'12px', padding:'20px', textAlign:'center', marginBottom:'12px', cursor:'pointer', background:'#fff' }}>
-              <div style={{ fontSize:'32px', marginBottom:'10px' }}>{ic}</div>
-              <div style={{ fontSize:'15px', fontWeight:700, color: C.navy, marginBottom:'4px' }}>{t}</div>
-              <div style={{ fontSize:'13px', color: C.slate }}>{s}</div>
-            </div>
-          ))}
-        </div>
+        <EmptyState
+          icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>}
+          title="No Projects Yet"
+          body="Create your first construction project to start tracking milestones, logs, materials and expenses."
+          ctaLabel="＋ Create First Project"
+          onCta={() => { setProjForm({}); setEditProjId(null); setSheet('new-project') }}
+        />
       ) : (
         <div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', padding:'0 16px', marginBottom:'16px' }}>
@@ -843,12 +897,28 @@ function InnerApp() {
   // ── PROJECTS LIST ──────────────────────────────────────────
   const ProjectsView = () => (
     <div style={{ padding:'16px', paddingBottom:'80px' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'16px' }}>
-        <div><div style={{ fontSize:'22px', fontWeight:800, color: C.navy, letterSpacing:'-0.025em' }}>Projects</div><div style={goldRule}/></div>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'20px' }}>
+        <div>
+          <div style={{ fontSize:'26px', fontWeight:800, color: C.navy, letterSpacing:'-0.025em', lineHeight:1.2 }}>Projects</div>
+          <div style={{ fontSize:'13px', color: C.slate, marginTop:'3px' }}>Construction sites and progress</div>
+        </div>
         <button style={btnPrimary} onClick={() => { setProjForm({}); setEditProjId(null); setSheet('new-project') }}>＋ New</button>
       </div>
-      {projLoading && <div style={{ textAlign:'center', padding:'32px', color: C.slate }}>Loading…</div>}
-      {!projLoading && !projects.length && <div style={{ textAlign:'center', padding:'40px', color: C.slate }}>No projects yet.</div>}
+      {projLoading && (
+        <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
+          {[1,2].map(i => <div key={i} style={{ height:'140px', background: C.mist, borderRadius:'16px', animation:'ebPulse 1.5s ease-in-out infinite' }}/>)}
+          <style>{`@keyframes ebPulse{0%,100%{opacity:1}50%{opacity:.5}}`}</style>
+        </div>
+      )}
+      {!projLoading && !projects.length && (
+        <EmptyState
+          icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>}
+          title="No Projects"
+          body="Add your first construction project to start tracking progress."
+          ctaLabel="＋ Create Project"
+          onCta={() => { setProjForm({}); setEditProjId(null); setSheet('new-project') }}
+        />
+      )}
       {projects.map(p => {
         const h = projectHealth(p)
         return (
@@ -891,45 +961,68 @@ function InnerApp() {
 
   // ── LOGS GLOBAL ────────────────────────────────────────────
   const LogsView = () => (
-    <div style={{ padding:'16px', paddingBottom:'80px' }}>
-      <div style={{ fontSize:'22px', fontWeight:800, color: C.navy, letterSpacing:'-0.025em' }}>All Site Logs</div>
-      <div style={goldRule}/>
-      <div style={{ height:'16px' }}/>
-      <div style={{ color: C.slate, fontSize:'13px' }}>Open a project to add or view logs here.</div>
+    <div style={{ padding:'20px 16px', paddingBottom:'80px' }}>
+      <div style={{ fontSize:'26px', fontWeight:800, color: C.navy, letterSpacing:'-0.025em', lineHeight:1.2 }}>Site Logs</div>
+      <div style={{ fontSize:'13px', color: C.slate, marginTop:'3px', marginBottom:'24px' }}>Daily activity across all projects</div>
+      <EmptyState
+        icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>}
+        title="Navigate to a Project"
+        body="Open any project and tap the Logs tab to add or view daily site updates."
+      />
     </div>
   )
 
   // ── MORE ───────────────────────────────────────────────────
   const MoreView = () => (
-    <div style={{ padding:'16px', paddingBottom:'80px' }}>
-      <div style={{ fontSize:'22px', fontWeight:800, color: C.navy, letterSpacing:'-0.025em' }}>More</div>
-      <div style={goldRule}/>
-      <div style={{ height:'16px' }}/>
-      <div style={{ ...card, padding:'14px', marginBottom:'16px' }}>
-        <div style={{ display:'flex', gap:'12px', alignItems:'center' }}>
-          <div style={{ width:'40px', height:'40px', borderRadius:'50%', background: C.blue, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700 }}>{initials(user?.profile.full_name)}</div>
-          <div>
-            <div style={{ fontWeight:700 }}>{user?.profile.full_name}</div>
-            <div style={{ fontSize:'12px', color: C.slate }}>{user?.email} · {role.replace('_',' ')}</div>
+    <div style={{ padding:'20px 16px', paddingBottom:'80px' }}>
+      <div style={{ fontSize:'26px', fontWeight:800, color: C.navy, letterSpacing:'-0.025em', lineHeight:1.2 }}>More</div>
+      <div style={{ fontSize:'13px', color: C.slate, marginTop:'3px', marginBottom:'24px' }}>Settings and account</div>
+
+      {/* Profile card */}
+      <div style={{ ...card, padding:'16px', marginBottom:'20px', cursor:'pointer' }} onClick={() => setShowProfile(true)}>
+        <div style={{ display:'flex', gap:'14px', alignItems:'center' }}>
+          <div style={{ width:'48px', height:'48px', borderRadius:'14px', background: C.navy, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'17px', fontWeight:700, flexShrink:0 }}>
+            {initials(user?.profile.full_name)}
+          </div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:'16px', fontWeight:700, color: C.navy }}>{user?.profile.full_name}</div>
+            <div style={{ fontSize:'12px', color: C.slate, marginTop:'2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user?.email}</div>
+            <div style={{ display:'inline-block', marginTop:'5px', padding:'2px 9px', borderRadius:'99px', background: C.mist, fontSize:'10px', fontWeight:700, color: C.slate, textTransform:'uppercase', letterSpacing:'.06em' }}>
+              {role.replace(/_/g,' ')}
+            </div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.slate} strokeWidth="1.8" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>
+
+      {/* Menu items */}
+      <div style={{ fontSize:'11px', fontWeight:700, color: C.slate, letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'8px', paddingLeft:'4px' }}>Management</div>
+      <div style={{ ...card, marginBottom:'20px' }}>
+        {can(role,'userManagement') && (
+          <div style={{ display:'flex', gap:'14px', alignItems:'center', padding:'14px 16px', borderBottom:`1px solid ${C.border}`, cursor:'pointer' }} onClick={() => setView('users')}>
+            <div style={{ width:'36px', height:'36px', borderRadius:'10px', background: C.mist, display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.slate} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:'15px', fontWeight:600, color: C.navy }}>User Management</div>
+              <div style={{ fontSize:'12px', color: C.slate, marginTop:'1px' }}>Create and manage team accounts</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.slate} strokeWidth="1.8" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        )}
+        <div style={{ display:'flex', gap:'14px', alignItems:'center', padding:'14px 16px', cursor:'pointer' }} onClick={() => setShowProfile(true)}>
+          <div style={{ width:'36px', height:'36px', borderRadius:'10px', background: C.redBg, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:'15px', fontWeight:600, color: C.red }}>Sign Out</div>
+            <div style={{ fontSize:'12px', color: C.slate, marginTop:'1px' }}>You'll need to sign in again</div>
           </div>
         </div>
       </div>
-      {can(role,'userManagement') && (
-        <div style={{ ...card, marginBottom:'8px', cursor:'pointer' }} onClick={() => setView('users')}>
-          <div style={{ display:'flex', gap:'12px', alignItems:'center', padding:'13px 16px' }}>
-            <div style={{ width:'40px', height:'40px', borderRadius:'6px', background: C.mist, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px' }}>👥</div>
-            <div><div style={{ fontWeight:600 }}>User Management</div><div style={{ fontSize:'12px', color: C.slate }}>Create, deactivate, change roles</div></div>
-          </div>
-        </div>
-      )}
-      <div style={{ ...card, marginBottom:'8px', cursor:'pointer' }} onClick={signOut}>
-        <div style={{ display:'flex', gap:'12px', alignItems:'center', padding:'13px 16px' }}>
-          <div style={{ width:'40px', height:'40px', borderRadius:'6px', background: C.redBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px' }}>🚪</div>
-          <div><div style={{ fontWeight:600, color: C.red }}>Sign Out</div><div style={{ fontSize:'12px', color: C.slate }}>You'll need to sign in again</div></div>
-        </div>
-      </div>
-      <div style={{ marginTop:'24px', textAlign:'center', fontSize:'12px', color: C.faint, lineHeight:1.8 }}>
-        ease Builders Pvt. Ltd. · Site Manager v4<br/>
+
+      <div style={{ textAlign:'center', fontSize:'11px', color: C.faint, lineHeight:1.8 }}>
+        Ease Builders Pvt. Ltd. · Site Manager<br/>
         Secured by Supabase · Real-time sync enabled
       </div>
     </div>
@@ -949,6 +1042,7 @@ function InnerApp() {
       </div>
       <BottomNav/>
       <NotifPanel/>
+      <ProfileSheet/>
       <ProjectSheet/>
     </div>
   )
@@ -958,14 +1052,15 @@ function InnerApp() {
 function App() {
   const { user, loading } = useAuth()
   if (loading) return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f5f7fb', fontFamily:"'Inter',system-ui,sans-serif" }}>
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#1e3a4a', fontFamily:"'Inter',system-ui,sans-serif" }}>
       <div style={{ textAlign:'center' }}>
-        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ margin:'0 auto 12px' }}>
-          <circle cx="20" cy="20" r="18" stroke="#1a4b8f" strokeWidth="1.5"/>
-          <path d="M20 8C25 8 31 13 31 20C31 27 25 32 20 32" stroke="#1a4b8f" strokeWidth="2" fill="none" strokeLinecap="round"/>
-          <path d="M20 13C23 13 27 16 27 20C27 24 23 27 20 27" stroke="#c9943a" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-        </svg>
-        <div style={{ fontSize:'13px', color:'#64748b' }}>Loading…</div>
+        <img src={LOGO_NAVY} alt="Ease Builders" style={{ height:'48px', width:'auto', display:'block', margin:'0 auto 20px', filter:'brightness(0) invert(1)', opacity:0.9 }}/>
+        <div style={{ display:'flex', gap:'6px', justifyContent:'center' }}>
+          {[0,1,2].map(i => (
+            <div key={i} style={{ width:'6px', height:'6px', borderRadius:'50%', background:'rgba(255,255,255,.5)', animation:`ebDot 1.2s ease-in-out ${i*0.2}s infinite` }}/>
+          ))}
+        </div>
+        <style>{`@keyframes ebDot{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}`}</style>
       </div>
     </div>
   )

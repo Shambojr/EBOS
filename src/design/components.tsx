@@ -46,19 +46,20 @@ interface SheetProps {
 export function Sheet({ title, children, onClose, footer }: SheetProps) {
   return (
     <div
-      style={{ position:'fixed', inset:0, background: colors.bgOverlay, zIndex: 100, display:'flex', alignItems:'flex-end' }}
+      style={{ position:'fixed', inset:0, background: colors.bgOverlay, zIndex: 100, display:'flex', alignItems:'flex-end', backdropFilter:'blur(4px)', WebkitBackdropFilter:'blur(4px)' } as React.CSSProperties}
       onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <style>{`@keyframes ebSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
+      <style>{`@keyframes ebSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}} @keyframes ebBackdrop{from{opacity:0}to{opacity:1}}`}</style>
       <div style={{
         background: colors.bgSurface, width: '100%',
         borderRadius: `${radius.xxl} ${radius.xxl} 0 0`,
-        maxHeight: '92vh', display: 'flex', flexDirection: 'column',
+        maxHeight: '94vh', display: 'flex', flexDirection: 'column',
         animation: `ebSheetUp ${motion.smooth} both`,
         fontFamily: "'Inter', system-ui, sans-serif",
+        boxShadow: '0 -4px 40px rgba(15,31,42,.12)',
       }}>
         {/* Drag indicator */}
-        <div style={{ width: '36px', height: '4px', background: colors.border, borderRadius: radius.pill, margin: `${space[2]} auto 0` }}/>
+        <div style={{ width: '36px', height: '4px', background: colors.borderStrong, borderRadius: radius.pill, margin: `${space[2]} auto 0`, opacity: 0.4 }}/>
         {/* Header */}
         <div style={{ padding: `${space[4]} ${space[5]} ${space[3]}`, borderBottom: `1px solid ${colors.divider}`, display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink: 0 }}>
           <div>
@@ -66,15 +67,15 @@ export function Sheet({ title, children, onClose, footer }: SheetProps) {
             <div style={T.goldRule}/>
           </div>
           <button onClick={onClose} style={{
-            width: '32px', height: '32px', borderRadius: radius.md, display:'flex', alignItems:'center', justifyContent:'center',
-            background: colors.bgMuted, border: 'none', color: colors.textSecondary, fontSize: '18px', cursor:'pointer',
+            width: '34px', height: '34px', borderRadius: radius.md, display:'flex', alignItems:'center', justifyContent:'center',
+            background: colors.bgMuted, border: 'none', color: colors.textSecondary, fontSize: '16px', cursor:'pointer', fontWeight: 600,
           }}>✕</button>
         </div>
         {/* Body */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: space[5] }}>{children}</div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: space[5], WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>{children}</div>
         {/* Footer */}
         {footer && (
-          <div style={{ padding: `${space[3]} ${space[5]} ${space[8]}`, borderTop: `1px solid ${colors.divider}`, display:'flex', gap: space[2], flexShrink: 0, background: colors.bgSurface }}>
+          <div style={{ padding: `${space[3]} ${space[5]}`, paddingBottom: `calc(${space[5]} + env(safe-area-inset-bottom, 0px))`, borderTop: `1px solid ${colors.divider}`, display:'flex', gap: space[2], flexShrink: 0, background: colors.bgSurface }}>
             {footer}
           </div>
         )}
