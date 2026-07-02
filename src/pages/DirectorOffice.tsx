@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useFinance, calcInterestAccrued, calcMonthlyInterest } from '../hooks/useFinance'
 import { colors as C_, space, radius as R, shadow, text as TT, T, type as TY, motion as MO } from '../design/tokens'
+import { fmtMoney, smartDate, getStatus } from '../design/business'
 import { Sheet, StatusBadge, SumCard, KPITile, StatGrid, HeroCard, EnterpriseCard, ListRow, ActivityItem, ConfirmDialog, PageHeader } from '../design/components'
 import type { User, Project } from '../types'
 import type {
@@ -24,8 +25,9 @@ const fieldStyle= T.field
 const fieldLabel= T.fieldLabel
 const goldRule  = T.goldRule
 
-function fmtCur(n?: number | null) { if(!n)return'₹0'; if(n>=1e7)return'₹'+(n/1e7).toFixed(2)+'Cr'; if(n>=1e5)return'₹'+(n/1e5).toFixed(2)+'L'; if(n>=1000)return'₹'+(n/1000).toFixed(1)+'K'; return'₹'+Math.round(n).toLocaleString('en-IN') }
-function fmtDate(d?: string | null) { if(!d)return'—'; return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) }
+// fmtMoney, smartDate imported from ../design/business
+const fmtCur  = fmtMoney
+const fmtDate = (d?: string | null) => smartDate(d, 'abs')
 function today() { return new Date().toISOString().split('T')[0] }
 
 type FinModule = 'dashboard'|'funding'|'receivables'|'payables'|'cashbook'|'banks'|'forecast'|'profitability'|'timeline'|'credentials'

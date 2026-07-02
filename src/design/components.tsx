@@ -560,3 +560,178 @@ export function HeroCard({ label, value, sub, children }: HeroCardProps) {
     </div>
   )
 }
+
+// ════════════════════════════════════════════════════════════
+// BUSINESS COMPONENTS — Stage 2.6
+// ════════════════════════════════════════════════════════════
+import { fmtMoney, smartDate, daysLeft, getStatus, projectHealth, HEALTH_LABEL, initials as bInitials } from './business'
+
+// ── EntityAvatar ─────────────────────────────────────────────
+// Extends Avatar with type variants.
+// Usage: <EntityAvatar name="Anirudh" type="user"/>
+//        <EntityAvatar name="SBI" type="bank" size="lg"/>
+type EntityType = 'user' | 'client' | 'vendor' | 'bank' | 'project' | 'contractor' | 'company'
+type AvatarSize = 'sm' | 'md' | 'lg'
+
+const ENTITY_BG: Record<EntityType, string> = {
+  user:       colors.brand,
+  client:     '#0891b2',
+  vendor:     '#7c3aed',
+  bank:       '#059669',
+  project:    colors.gold,
+  contractor: '#d97706',
+  company:    colors.brand,
+}
+
+export function EntityAvatar({ name, type = 'user', size = 'md', imageUrl }: { name?: string; type?: EntityType; size?: AvatarSize; imageUrl?: string }) {
+  const dim = size === 'sm' ? '28px' : size === 'lg' ? '48px' : '36px'
+  const fontSize = size === 'sm' ? T_.sizeXs : size === 'lg' ? T_.sizeLg : T_.sizeSm
+  const rad = size === 'sm' ? radius.sm : size === 'lg' ? radius.lg : radius.md
+  const bg = ENTITY_BG[type] ?? colors.brand
+
+  if (imageUrl) {
+    return <img src={imageUrl} alt={name} style={{ width: dim, height: dim, borderRadius: rad, objectFit: 'cover', flexShrink: 0 }}/>
+  }
+
+  return (
+    <div style={{ width: dim, height: dim, borderRadius: rad, background: bg, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize, fontWeight: T_.weightBold, flexShrink: 0, letterSpacing: '-0.01em' }}>
+      {bInitials(name)}
+    </div>
+  )
+}
+
+// ── ProjectHealthCard ─────────────────────────────────────────
+// Reusable project card used on Home, Projects list, future search.
+// DO NOT redesign here — visual redesign happens in Stage 3.
+// Usage: <ProjectHealthCard project={p} onClick={() => goProject(p)}/>
+interface ProjectHealthCardProps {
+  project: {
+    id: string
+    name: string
+    client?: string | null
+    location?: string | null
+    type?: string | null
+    stage?: string | null
+    progress: number
+    budget?: number | null
+    total_spent?: number | null
+    end_date?: string | null
+    status?: string | null
+  }
+  onClick?: () => void
+  onEdit?: () => void
+  showEdit?: boolean
+}
+
+const STAGE_ICONS: Record<string, string> = {
+  Tender:'📋', Planning:'📐', Procurement:'🛒', 'Site Prep':'🚧', Foundation:'🏗',
+  'Civil Works':'🧱', MGPS:'🔵', HVAC:'❄️', Electrical:'⚡', Plumbing:'🔧',
+  Finishing:'🎨', Testing:'🧪', Commissioning:'⚙️', Handover:'🏁',
+}
+
+export function ProjectHealthCard({ project: p, onClick, onEdit, showEdit }: ProjectHealthCardProps) {
+  const h = projectHealth(p)
+  const healthColor = h === 'green' ? colors.success : h === 'amber' ? colors.warning : colors.danger
+  const healthLabel = HEALTH_LABEL[h]
+
+  return (
+    <div style={{ ...T.card, marginBottom: space[3], cursor: onClick ? 'pointer' : 'default' }}>
+      {/* Health bar */}
+      <div style={{ height: '3px', background: healthColor }}/>
+      {/* Dark header */}
+      <div style={{ background: colors.brand, padding: `${space[3]} ${space[4]}` }} onClick={onClick}>
+        <div style={{ fontSize: T_.sizeXs, fontWeight: T_.weightSemibold, letterSpacing: T_.trackingWidest, textTransform: 'uppercase', color: 'rgba(255,255,255,.45)', marginBottom: '3px' }}>{p.type || 'Construction'}</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: T_.size2xl, fontWeight: T_.weightBold, color: '#fff', lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+            <div style={{ fontSize: T_.sizeSm, color: 'rgba(255,255,255,.55)', marginTop: '2px' }}>{p.client || '—'}</div>
+          </div>
+          <span style={{ padding: `${space[1]} ${space[2]}`, borderRadius: radius.pill, fontSize: T_.sizeXs, fontWeight: T_.weightSemibold, background: h === 'green' ? '#f0fdf4' : h === 'amber' ? '#fffbeb' : '#fef2f2', color: healthColor, marginLeft: space[2], flexShrink: 0 }}>{healthLabel}</span>
+        </div>
+      </div>
+      {/* Body */}
+      <div style={{ padding: `${space[3]} ${space[4]}` }} onClick={onClick}>
+        <div style={{ display: 'flex', gap: space[3], flexWrap: 'wrap', marginBottom: space[3] }}>
+          {p.location && <span style={{ fontSize: T_.sizeSm, color: colors.textSecondary }}>📍 {p.location}</span>}
+          {p.end_date && <span style={{ fontSize: T_.sizeSm, color: colors.textSecondary }}>📅 {smartDate(p.end_date)}</span>}
+          {p.stage && <span style={{ fontSize: T_.sizeSm, color: colors.textSecondary }}>{STAGE_ICONS[p.stage] || ''} {p.stage}</span>}
+        </div>
+        <ProgressBar value={p.progress} color={healthColor}/>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: space[1], fontSize: T_.sizeSm, color: colors.textSecondary }}>
+          <span>{p.progress}% complete</span>
+          {p.budget && <span>{fmtMoney(p.total_spent ?? 0)} of {fmtMoney(p.budget)}</span>}
+        </div>
+      </div>
+      {/* Edit footer */}
+      {showEdit && onEdit && (
+        <div style={{ padding: `0 ${space[4]} ${space[3]}` }}>
+          <button onClick={e => { e.stopPropagation(); onEdit() }} style={{ ...T.btnSecondary, width: '100%', height: '36px', fontSize: T_.sizeSm }}>✎ Edit Project</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── BusinessEmptyStates ──────────────────────────────────────
+// Named presets — no more repeating icon/title/body for common states.
+// Usage: <BusinessEmptyStates.NoProjects onCta={() => ...}/>
+
+const makeEmptyState = (icon: React.ReactNode, title: string, body: string) =>
+  ({ onCta, ctaLabel }: { onCta?: () => void; ctaLabel?: string }) =>
+    <EmptyState icon={icon} title={title} body={body} ctaLabel={ctaLabel} onCta={onCta}/>
+
+const ProjectIcon = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+const DocIcon    = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+const MoneyIcon  = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+const LockIcon   = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+const LogIcon    = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+const BoxIcon    = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+const BellIcon   = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+const ChartIcon  = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+
+export const BusinessEmptyState = {
+  NoProjects:    makeEmptyState(ProjectIcon, 'No Projects Yet',      'Create your first construction project to start tracking milestones, logs, materials and expenses.'),
+  NoFunding:     makeEmptyState(MoneyIcon,   'No Funding Records',   'Add loans, gold loans, director contributions and other funding sources here.'),
+  NoReceivables: makeEmptyState(MoneyIcon,   'No Receivables',       'Add running bills and client invoices to track incoming payments.'),
+  NoPayables:    makeEmptyState(MoneyIcon,   'No Payables',          'Add vendor invoices and supplier payments to track outgoing obligations.'),
+  NoDocuments:   makeEmptyState(DocIcon,     'No Documents',         'Link drawings, BOQs, certificates and contracts from Google Drive or any URL.'),
+  NoLogs:        makeEmptyState(LogIcon,     'No Daily Logs',        'Record daily site activity, labour counts, weather and progress updates.'),
+  NoMaterials:   makeEmptyState(BoxIcon,     'No Materials',         'Track procurement and delivery status for materials across this project.'),
+  NoExpenses:    makeEmptyState(MoneyIcon,   'No Expenses',          'Record material, labour, equipment and other project expenses here.'),
+  NoCredentials: makeEmptyState(LockIcon,    'No Credentials Saved', 'Store portal logins, vendor credentials and client access details securely.'),
+  NoNotifications: makeEmptyState(BellIcon,  'All Caught Up',        'No new notifications right now.'),
+  NoBOQ:         makeEmptyState(ChartIcon,   'No BOQ Items',         'Add items manually or import from a CSV file. Format: Description, Spec, Unit, Qty, Rate.'),
+}
+
+// ── EnterpriseList ────────────────────────────────────────────
+// Reusable list container with loading skeleton and empty state.
+// Usage: <EnterpriseList loading={loading} empty={<BusinessEmptyState.NoLogs/>} items={[...]}/>
+interface EnterpriseListProps {
+  loading?: boolean
+  empty?: React.ReactNode
+  children: React.ReactNode
+  skeletonCount?: number
+}
+
+export function EnterpriseList({ loading, empty, children, skeletonCount = 3 }: EnterpriseListProps) {
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: space[3] }}>
+        {Array.from({ length: skeletonCount }).map((_, i) => (
+          <div key={i} style={{ background: colors.bgSurface, borderRadius: radius.lg, padding: space[4], border: `1px solid ${colors.border}` }}>
+            <Skeleton height="14px" width="60%" radius={radius.sm}/>
+            <div style={{ height: space[2] }}/>
+            <Skeleton height="12px" width="40%" radius={radius.sm}/>
+          </div>
+        ))}
+        <style>{`@keyframes ebPulse{0%,100%{opacity:1}50%{opacity:.5}}`}</style>
+      </div>
+    )
+  }
+
+  // Check if children is empty (React.Children.count handles fragments)
+  const count = React.Children.count(children)
+  if (count === 0 && empty) return <>{empty}</>
+
+  return <>{children}</>
+}

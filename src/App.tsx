@@ -12,19 +12,21 @@ import { supabase } from './lib/supabase'
 import { logActivity } from './lib/logger'
 import { LOGO_NAVY } from './assets/logo'
 import { colors as C_, space, radius as R, shadow, text as TT, T, type as TY, motion as MO, iconSize } from './design/tokens'
-import { toast, Sheet, FormGroup, RangeField, EmptyState, HealthBadge, Badge, SyncIndicator, Avatar, ProgressBar, EnterpriseCard, KPITile, StatGrid, HeroCard, ConfirmDialog, ListRow, ActivityItem, FormSection, PageHeader } from './design/components'
+import { fmtMoney, smartDate, daysLeft as dLeft, isOverdue as isOD, projectHealth as calcHealth, initials as bInitials, HEALTH_LABEL } from './design/business'
+import { toast, Sheet, FormGroup, RangeField, EmptyState, HealthBadge, Badge, SyncIndicator, Avatar, ProgressBar, EnterpriseCard, KPITile, StatGrid, HeroCard, ConfirmDialog, ListRow, ActivityItem, FormSection, PageHeader, ProjectHealthCard, EntityAvatar, BusinessEmptyState, EnterpriseList } from './design/components'
 import type { Project, Milestone, UserRole } from './types'
 
 // ── Helpers ────────────────────────────────────────────────────
+// Currency, date, health: imported from ./design/business
 function uid() { return crypto.randomUUID() }
 function today() { return new Date().toISOString().split('T')[0] }
-function fmtDate(d?: string | null) { if (!d) return '—'; return new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) }
-function fmtCur(n?: number | null) { if (!n) return '₹0'; if (n >= 1e7) return '₹' + (n / 1e7).toFixed(2) + 'Cr'; if (n >= 1e5) return '₹' + (n / 1e5).toFixed(2) + 'L'; if (n >= 1000) return '₹' + (n / 1000).toFixed(1) + 'K'; return '₹' + n.toLocaleString('en-IN') }
-function initials(n?: string) { return (n || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() }
-function isOverdue(d?: string | null) { return d ? new Date(d + 'T00:00:00') < new Date() : false }
-function daysLeft(d?: string | null) { if (!d) return null; return Math.ceil((new Date(d + 'T00:00:00').getTime() - Date.now()) / 864e5) }
-function fmtAgo(ts: string) { const s = (Date.now() - new Date(ts).getTime()) / 1000; if (s < 60) return 'just now'; if (s < 3600) return Math.floor(s / 60) + 'm ago'; if (s < 86400) return Math.floor(s / 3600) + 'h ago'; return Math.floor(s / 86400) + 'd ago' }
-function projectHealth(p: Project) { const sp = p.total_spent ?? 0; const b = p.budget ?? 0; const hasOverdue = false; if (b && sp > b) return 'red'; if (b && sp > b * 0.85) return 'amber'; const dl = daysLeft(p.end_date); if (dl !== null && dl < 7 && p.progress < 90) return 'amber'; return 'green' }
+const fmtDate = (d?: string | null) => smartDate(d, 'abs')
+const fmtCur  = fmtMoney
+const initials = bInitials
+const isOverdue = isOD
+const daysLeft  = dLeft
+function fmtAgo(ts: string) { return smartDate(ts, 'ago') }
+function projectHealth(p: Project) { return calcHealth(p) }
 const STAGES = ['Tender','Planning','Procurement','Site Prep','Foundation','Civil Works','MGPS','HVAC','Electrical','Plumbing','Finishing','Testing','Commissioning','Handover']
 const STAGE_ICONS = ['📋','📐','🛒','🚧','🏗','🧱','🔵','❄️','⚡','🔧','🎨','🧪','⚙️','🏁']
 const EXP_CATS = ['Materials','Labour','Equipment','Transport','Professional Fees','Subcontract','GST','Misc']
