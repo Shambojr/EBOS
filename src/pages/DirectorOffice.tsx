@@ -1,26 +1,28 @@
 import { useState } from 'react'
 import { useFinance, calcInterestAccrued, calcMonthlyInterest } from '../hooks/useFinance'
+import { colors as C_, space, radius as R, shadow, text as TT, T, type as TY, motion as MO } from '../design/tokens'
+import { Sheet, FormGroup as FG_ds, Grid2 as Grid2_ds, StatusBadge, SumCard, SectionHeader } from '../design/components'
 import type { User, Project } from '../types'
 import type {
   Funding, Receivable, Payable, CashBookEntry,
   BankAccount, FundingCategory, InterestType, BillStatus, PayableStatus
 } from '../types/finance'
 
-// ── SHARED STYLE TOKENS (match preview design system) ────────
+// ── Design system aliases ─────────────────────────────────────
 const C = {
-  navy:'#1e3a4a', navyL:'#2a5068', navyD:'#142635', blue:'#1e40af', gold:'#c9943a', white:'#fff',
-  ash:'#f0f4f8', mist:'#e8eef4', border:'rgba(30,58,74,.10)', border2:'rgba(30,58,74,.06)',
-  ink:'#0f1f2a', body:'#2d4a5a', slate:'#5a7a8a', faint:'#8faab8',
-  green:'#0d9488', greenBg:'#f0fdf9', amber:'#d97706', amberBg:'#fffbeb',
-  red:'#dc2626', redBg:'#fef2f2', teal:'#0891b2', tealBg:'#f0f9ff',
+  navy:C_.brand, navyL:C_.brandLight, navyD:C_.brandDark, blue:C_.info, gold:C_.gold, white:'#fff',
+  ash:C_.bgApp, mist:C_.bgMuted, border:C_.border, border2:C_.divider,
+  ink:C_.textPrimary, body:C_.textPrimary, slate:C_.textSecondary, faint:C_.textTertiary,
+  green:C_.success, greenBg:C_.successBg, amber:C_.warning, amberBg:C_.warningBg,
+  red:C_.danger, redBg:C_.dangerBg, teal:C_.teal, tealBg:C_.tealBg,
 }
-const card = { background:'#fff', border:`1px solid ${C.border}`, borderRadius:'16px', boxShadow:'0 1px 3px rgba(15,31,42,.06), 0 1px 2px rgba(15,31,42,.04)', overflow:'hidden' }
-const btnP = { padding:'11px 18px', background:C.navy, color:'#fff', border:'none', borderRadius:'12px', fontSize:'14px', fontWeight:600, cursor:'pointer', fontFamily:'inherit', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'7px', boxShadow:'0 2px 8px rgba(30,58,74,.25)' } as const
-const btnG = { padding:'10px 16px', background:'#fff', color:C.navy, border:`1.5px solid ${C.border}`, borderRadius:'12px', fontSize:'13px', fontWeight:600, cursor:'pointer', fontFamily:'inherit', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'7px' } as const
-const btnD = { padding:'10px 16px', background:C.redBg, color:C.red, border:'none', borderRadius:'12px', fontSize:'13px', fontWeight:600, cursor:'pointer', fontFamily:'inherit', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'7px' } as const
-const fieldStyle = { width:'100%', padding:'13px 14px', border:`1.5px solid ${C.border}`, borderRadius:'12px', fontSize:'15px', color:C.ink, background:'#fff', outline:'none', fontFamily:'inherit', boxSizing:'border-box' as const }
-const fieldLabel = { display:'block' as const, fontSize:'12px', fontWeight:700, color:C.slate, letterSpacing:'.06em', textTransform:'uppercase' as const, marginBottom:'7px' }
-const goldRule = { width:'28px', height:'3px', background:C.gold, borderRadius:'2px', marginTop:'8px' }
+const card      = T.card
+const btnP      = T.btnPrimary
+const btnG      = T.btnOutline
+const btnD      = T.btnDanger
+const fieldStyle= T.field
+const fieldLabel= T.fieldLabel
+const goldRule  = T.goldRule
 
 function fmtCur(n?: number | null) { if(!n)return'₹0'; if(n>=1e7)return'₹'+(n/1e7).toFixed(2)+'Cr'; if(n>=1e5)return'₹'+(n/1e5).toFixed(2)+'L'; if(n>=1000)return'₹'+(n/1000).toFixed(1)+'K'; return'₹'+Math.round(n).toLocaleString('en-IN') }
 function fmtDate(d?: string | null) { if(!d)return'—'; return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) }
@@ -28,25 +30,7 @@ function today() { return new Date().toISOString().split('T')[0] }
 
 type FinModule = 'dashboard'|'funding'|'receivables'|'payables'|'cashbook'|'banks'|'forecast'|'profitability'|'timeline'
 
-// ── SHEET COMPONENT ──────────────────────────────────────────
-function Sheet({ title, children, onClose, footer }: { title:string; children:React.ReactNode; onClose:()=>void; footer?:React.ReactNode }) {
-  return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(15,31,42,.5)', zIndex:100, display:'flex', alignItems:'flex-end' }}
-      onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background:'#fff', width:'100%', borderRadius:'24px 24px 0 0', maxHeight:'92vh', display:'flex', flexDirection:'column', fontFamily:"'Inter',system-ui,sans-serif", animation:'slideUp .22s ease-out' }}>
-        <style>{`@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
-        <div style={{ width:'36px', height:'4px', background:C.border2, borderRadius:'2px', margin:'10px auto 0' }}/>
-        <div style={{ padding:'16px 20px 14px', borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
-          <div><div style={{ fontSize:'18px', fontWeight:700, color:C.navy }}>{title}</div><div style={goldRule}/></div>
-          <button onClick={onClose} style={{ width:'32px', height:'32px', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', background:C.mist, border:'none', color:C.slate, fontSize:'18px', cursor:'pointer' }}>✕</button>
-        </div>
-        <div style={{ flex:1, overflowY:'auto', padding:'20px' }}>{children}</div>
-        {footer && <div style={{ padding:'14px 20px 28px', borderTop:`1px solid ${C.border}`, display:'flex', gap:'10px', flexShrink:0, background:'#fff' }}>{footer}</div>}
-      </div>
-    </div>
-  )
-}
-
+// Sheet, FG, Grid2 imported from ../design/components
 function FG({ label:lbl, children }: { label:string; children:React.ReactNode }) {
   return <div style={{ marginBottom:'16px' }}><label style={fieldLabel}>{lbl}</label>{children}</div>
 }
@@ -54,28 +38,9 @@ function Grid2({ children }: { children:React.ReactNode }) {
   return <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px' }}>{children}</div>
 }
 
-// ── STATUS BADGES ────────────────────────────────────────────
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string,[string,string]> = {
-    Active:['#eff6ff',C.blue], 'Partially Repaid':['#fffbeb',C.amber], Closed:[C.greenBg,C.green], Overdue:[C.redBg,C.red],
-    Draft:[C.mist,C.slate], Submitted:['#eff6ff',C.blue], Approved:[C.greenBg,C.green],
-    'Partially Paid':['#fffbeb',C.amber], Paid:[C.greenBg,C.green],
-    Pending:[C.mist,C.slate], Disputed:[C.redBg,C.red],
-  }
-  const [bg, color] = map[status] ?? [C.mist, C.slate]
-  return <span style={{ padding:'4px 10px', borderRadius:'99px', fontSize:'11px', fontWeight:600, background:bg, color }}>{status}</span>
-}
+// StatusBadge imported from ../design/components
 
-// ── SUMMARY CARD ─────────────────────────────────────────────
-function SumCard({ label, value, sub, accent, alert }: { label:string; value:string; sub?:string; accent?:string; alert?:boolean }) {
-  return (
-    <div style={{ textAlign:'center', padding:'12px 10px', background: alert?C.redBg:C.mist, borderRadius:'14px' }}>
-      <div style={{ fontSize:'10px', fontWeight:700, color: alert?C.red:C.slate, letterSpacing:'.06em', textTransform:'uppercase', marginBottom:'5px' }}>{label}</div>
-      <div style={{ fontSize:'16px', fontWeight:800, color: alert?C.red:C.navy, letterSpacing:'-0.02em' }}>{value}</div>
-      {sub && <div style={{ fontSize:'10px', color: alert?C.red:C.slate, marginTop:'3px' }}>{sub}</div>}
-    </div>
-  )
-}
+// SumCard imported from ../design/components
 
 // ══════════════════════════════════════════════════════════════
 // MAIN DIRECTOR OFFICE COMPONENT

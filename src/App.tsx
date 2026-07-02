@@ -11,6 +11,8 @@ import { useProjectData } from './hooks/useProjectData'
 import { supabase } from './lib/supabase'
 import { logActivity } from './lib/logger'
 import { LOGO_NAVY } from './assets/logo'
+import { colors as C_, space, radius as R, shadow, text as TT, T, type as TY, motion as MO, iconSize } from './design/tokens'
+import { toast, Sheet, FormGroup, RangeField, EmptyState, HealthBadge, Badge, SyncIndicator, Avatar, ProgressBar } from './design/components'
 import type { Project, Milestone, UserRole } from './types'
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -32,113 +34,38 @@ const LOG_TRADES = ['Masons','Carpenters','Electricians','Plumbers','Welders','H
 const MS_PRIORITIES = ['Low','Medium','High','Critical']
 const PROJ_TYPES = ['MOT (Modular OT)','MGPS','HVAC','Civil','Electrical','Plumbing','Combined','Renovation']
 
-// ── CSS-in-JS token shortcuts ──────────────────────────────────
+// ── Design system aliases (consumed from ./design/tokens) ──────
+// C = semantic color shorthand (backwards compatible)
 const C = {
-  navy:'#1e3a4a', navyL:'#2a5068', navyD:'#142635', blue:'#1e40af', gold:'#c9943a', white:'#fff',
-  ash:'#f0f4f8', mist:'#e8eef4', border:'rgba(30,58,74,.10)', border2:'rgba(30,58,74,.06)',
-  ink:'#0f1f2a', body:'#2d4a5a', slate:'#5a7a8a', faint:'#8faab8',
-  green:'#0d9488', greenBg:'#f0fdf9', amber:'#d97706', amberBg:'#fffbeb',
-  red:'#dc2626', redBg:'#fef2f2', teal:'#0891b2', tealBg:'#f0f9ff',
+  navy:    C_.brand,      navyL:   C_.brandLight,  navyD:   C_.brandDark,
+  blue:    C_.info,       gold:    C_.gold,         white:   '#fff',
+  ash:     C_.bgApp,      mist:    C_.bgMuted,      border:  C_.border,
+  border2: C_.divider,    ink:     C_.textPrimary,  body:    C_.textPrimary,
+  slate:   C_.textSecondary, faint: C_.textTertiary,
+  green:   C_.success,    greenBg: C_.successBg,    amber:   C_.warning,
+  amberBg: C_.warningBg,  red:    C_.danger,        redBg:   C_.dangerBg,
+  teal:    C_.teal,       tealBg:  C_.tealBg,
 }
-const SF = { fontFamily:"'Inter',system-ui,sans-serif", fontSize:'15px', color: C.ink }
-const goldRule = { width:'28px', height:'3px', background: C.gold, borderRadius:'2px', marginTop:'8px' }
-const btnPrimary = { padding:'11px 18px', background: C.navy, color:'#fff', border:'none', borderRadius:'12px', fontSize:'14px', fontWeight:600, cursor:'pointer', fontFamily:'inherit', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'7px', boxShadow:'0 2px 8px rgba(30,58,74,.25)' }
-const btnGhost = { padding:'10px 16px', background:'#fff', color: C.navy, border:`1.5px solid ${C.border}`, borderRadius:'12px', fontSize:'13px', fontWeight:600, cursor:'pointer', fontFamily:'inherit', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'7px' }
-const btnDanger = { padding:'10px 16px', background: C.redBg, color: C.red, border:'none', borderRadius:'12px', fontSize:'13px', fontWeight:600, cursor:'pointer', fontFamily:'inherit', display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'7px' }
-const fieldStyle = { width:'100%', padding:'13px 14px', border:`1.5px solid ${C.border}`, borderRadius:'12px', fontSize:'15px', color: C.ink, background:'#fff', outline:'none', fontFamily:'inherit', boxSizing:'border-box' as const }
-const fieldLabel = { display:'block' as const, fontSize:'12px', fontWeight:700, color: C.slate, letterSpacing:'.06em', textTransform:'uppercase' as const, marginBottom:'7px' }
-const card = { background:'#fff', border:`1px solid ${C.border}`, borderRadius:'16px', boxShadow:'0 1px 3px rgba(15,31,42,.06), 0 1px 2px rgba(15,31,42,.04)', overflow:'hidden' }
-const heroCard = { margin:'0 16px 16px', background:`linear-gradient(135deg, ${C.navy} 0%, ${C.navyL} 100%)`, borderRadius:'24px', padding:'24px', boxShadow:'0 8px 24px rgba(15,31,42,.12), 0 4px 8px rgba(15,31,42,.06)', position:'relative' as const, overflow:'hidden' as const, color:'#fff' }
+const SF        = { fontFamily:"'Inter',system-ui,sans-serif", fontSize:'15px', color: C.ink }
+const goldRule  = T.goldRule
+const btnPrimary= T.btnPrimary
+const btnGhost  = T.btnOutline
+const btnDanger = T.btnDanger
+const fieldStyle= T.field
+const fieldLabel= T.fieldLabel
+const card      = T.card
 
-// ── Status badge ───────────────────────────────────────────────
-function HealthBadge({ h }: { h: string }) {
-  const map: Record<string, [string,string]> = { green:['#f0fdf4','#16a34a'], amber:['#fffbeb','#d97706'], red:['#fef2f2','#dc2626'] }
-  const [bg, color] = map[h] ?? map.green
-  const label = h === 'green' ? 'On Track' : h === 'amber' ? 'At Risk' : 'Delayed'
-  return <span style={{ padding:'3px 8px', borderRadius:'99px', fontSize:'11px', fontWeight:600, background:bg, color }}>{label}</span>
-}
+// HealthBadge, Badge, SyncIndicator imported from ./design/components
 
-function Badge({ label, color='blue' }: { label: string; color?: string }) {
-  const map: Record<string,string[]> = { blue:['#eff6ff',C.blue], green:[C.greenBg,C.green], amber:[C.amberBg,C.amber], red:[C.redBg,C.red], gray:[C.mist,C.slate] }
-  const [bg, c] = map[color] ?? map.blue
-  return <span style={{ padding:'3px 8px', borderRadius:'99px', fontSize:'11px', fontWeight:600, background:bg, color:c }}>{label}</span>
-}
+// toast imported from ./design/components
 
-// ── Sync status indicator ──────────────────────────────────────
-function SyncIndicator({ status, pending }: { status: string; pending: number }) {
-  const map: Record<string,[string,string]> = {
-    online: [C.green, '● Online'],
-    offline: [C.red, '● Offline'],
-    syncing: [C.amber, '↻ Syncing…'],
-    failed: [C.red, `⚠ ${pending} queued`],
-  }
-  const [color, label] = map[status] ?? map.online
-  return <span style={{ fontSize:'11px', fontWeight:600, color, letterSpacing:'.02em' }}>{label}</span>
-}
+// Sheet imported from ./design/components
 
-// ── Toast ──────────────────────────────────────────────────────
-let _toastTimer: ReturnType<typeof setTimeout>
-function toast(msg: string) {
-  const existing = document.querySelector('.eb-toast')
-  if (existing) existing.remove()
-  clearTimeout(_toastTimer)
-  const el = document.createElement('div')
-  el.className = 'eb-toast'
-  el.textContent = msg
-  Object.assign(el.style, { position:'fixed', top:'16px', left:'50%', transform:'translateX(-50%)', background: C.navy, color:'#fff', padding:'10px 18px', borderRadius:'12px', fontSize:'13px', fontWeight:500, zIndex:9999, boxShadow:'0 8px 32px rgba(13,33,68,.2)', whiteSpace:'nowrap', fontFamily:"'Inter',system-ui,sans-serif" })
-  document.body.appendChild(el)
-  _toastTimer = setTimeout(() => el.remove(), 2600)
-}
+// FormGroup imported from ./design/components
 
-// ── Sheet (bottom modal) ───────────────────────────────────────
-function Sheet({ title, children, onClose, footer }: { title: string; children: React.ReactNode; onClose: () => void; footer?: React.ReactNode }) {
-  return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(13,33,68,.5)', zIndex:100, display:'flex', alignItems:'flex-end' }}
-      onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background:'#fff', width:'100%', borderRadius:'16px 16px 0 0', maxHeight:'92vh', display:'flex', flexDirection:'column', animation:'slideUp .22s ease-out', ...SF }}>
-        <style>{`@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
-        <div style={{ width:'36px', height:'4px', background: C.border2, borderRadius:'2px', margin:'10px auto 0' }}/>
-        <div style={{ padding:'14px 16px 12px', borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
-          <div>
-            <div style={{ fontSize:'17px', fontWeight:700, color: C.navy }}>{title}</div>
-            <div style={goldRule}/>
-          </div>
-          <button onClick={onClose} style={{ width:'32px', height:'32px', display:'flex', alignItems:'center', justifyContent:'center', background:'none', border:'none', color: C.slate, fontSize:'18px', cursor:'pointer', borderRadius:'6px' }}>✕</button>
-        </div>
-        <div style={{ flex:1, overflowY:'auto', padding:'16px' }}>{children}</div>
-        {footer && <div style={{ padding:'12px 16px 28px', borderTop:`1px solid ${C.border}`, display:'flex', gap:'10px', flexShrink:0, background:'#fff' }}>{footer}</div>}
-      </div>
-    </div>
-  )
-}
+// RangeField imported from ./design/components
 
-function FormGroup({ label: lbl, children }: { label: string; children: React.ReactNode }) {
-  return <div style={{ marginBottom:'14px' }}><label style={fieldLabel}>{lbl}</label>{children}</div>
-}
-
-function RangeField({ label: lbl, id, value, onChange }: { label: string; id: string; value: number; onChange: (v: number) => void }) {
-  return (
-    <FormGroup label={`${lbl}: `}>
-      <div style={{ display:'flex', alignItems:'center', gap:'10px' }}>
-        <input type="range" id={id} min={0} max={100} value={value} onChange={e => onChange(Number(e.target.value))} style={{ flex:1, accentColor: C.blue }}/>
-        <span style={{ fontSize:'13px', fontWeight:700, color: C.blue, minWidth:'38px', textAlign:'right' }}>{value}%</span>
-      </div>
-    </FormGroup>
-  )
-}
-
-function EmptyState({ icon, title, body, ctaLabel, onCta }: { icon: React.ReactNode; title: string; body?: string; ctaLabel?: string; onCta?: () => void }) {
-  return (
-    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'48px 32px', textAlign:'center' }}>
-      <div style={{ width:'64px', height:'64px', background: C.mist, borderRadius:'18px', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'20px' }}>
-        <span style={{ width:'28px', height:'28px', color: C.slate, display:'flex' }}>{icon}</span>
-      </div>
-      <div style={{ fontSize:'17px', fontWeight:700, color: C.ink, marginBottom:'8px' }}>{title}</div>
-      {body && <div style={{ fontSize:'14px', color: C.slate, lineHeight:1.6, marginBottom:'24px', maxWidth:'280px' }}>{body}</div>}
-      {ctaLabel && onCta && <button style={btnPrimary} onClick={onCta}>{ctaLabel}</button>}
-    </div>
-  )
-}
+// EmptyState imported from ./design/components
 
 // ── Main Inner App (after auth) ────────────────────────────────
 function InnerApp() {
