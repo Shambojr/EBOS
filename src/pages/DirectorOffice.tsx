@@ -28,7 +28,7 @@ function fmtCur(n?: number | null) { if(!n)return'₹0'; if(n>=1e7)return'₹'+(
 function fmtDate(d?: string | null) { if(!d)return'—'; return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) }
 function today() { return new Date().toISOString().split('T')[0] }
 
-type FinModule = 'dashboard'|'funding'|'receivables'|'payables'|'cashbook'|'banks'|'forecast'|'profitability'|'timeline'
+type FinModule = 'dashboard'|'funding'|'receivables'|'payables'|'cashbook'|'banks'|'forecast'|'profitability'|'timeline'|'credentials'
 
 // Sheet, FG, Grid2 imported from ../design/components
 function FG({ label:lbl, children }: { label:string; children:React.ReactNode }) {
@@ -62,6 +62,8 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
   const [selectedPayable, setSelectedPayable] = useState<Payable | null>(null)
   const [billPhotoFile, setBillPhotoFile] = useState<File | null>(null)
   const [billPhotoPreview, setBillPhotoPreview] = useState<string | null>(null)
+  const [credentials, setCredentials] = useState<any[]>([])
+  const [showPass, setShowPass] = useState<Record<string,boolean>>({})
 
   function sf(key: string, val: any) { setForm((f: any) => ({ ...f, [key]: val })) }
   function gv(key: string) { return form[key] ?? '' }
@@ -82,6 +84,7 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
     { key:'forecast',       label:'Cash Flow',     icon:'📈' },
     { key:'profitability',  label:'Profitability', icon:'📊' },
     { key:'timeline',       label:'Timeline',      icon:'🗓' },
+    { key:'credentials',    label:'Credentials',   icon:'🔐' },
   ]
 
   const s = fin.summary
@@ -696,6 +699,128 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
       )
     }
 
+    // ── CREDENTIALS ──────────────────────────────────────────
+    if (mod === 'credentials') {
+      const CRED_CATS = ['General','Government Portal','Client Portal','Vendor Portal','Banking','Email','Other']
+
+      const loadCreds = async () => {
+        const { data } = await (await import('../lib/supabase')).supabase.from('vault_credentials').select('*').order('category').order('name')
+        if (data) setCredentials(data)
+      }
+      if (credentials.length === 0) { loadCreds() }
+
+      const saveCred = async () => {
+        const { supabase } = await import('../lib/supabase')
+        if (editId) {
+          const { error } = await supabase.from('vault_credentials').update(form).eq('id', editId)
+          if (error) { alert('Error: ' + error.message); return }
+        } else {
+          const { error } = await supabase.from('vault_credentials').insert({ ...form, created_by: currentUser.id })
+          if (error) { alert('Error: ' + error.message); return }
+        }
+        setSheet(null); setForm({}); setEditId(null)
+        loadCreds()
+      }
+
+      const deleteCred = async (id: string) => {
+        const { supabase } = await import('../lib/supabase')
+        if (!confirm('Delete this credential?')) return
+        await supabase.from('vault_credentials').delete().eq('id', id)
+        loadCreds()
+      }
+
+      // Group by category
+      const grouped = credentials.reduce((acc: any, c: any) => {
+        const cat = c.category || 'General'
+        if (!acc[cat]) acc[cat] = []
+        acc[cat].push(c)
+        return acc
+      }, {})
+
+      return (
+        <div>
+          <div style={{ padding:'12px 0 4px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <div style={{ fontSize:'13px', color:C.slate }}>Director-only · Not visible to team</div>
+            <button style={btnP} onClick={() => { setForm({ category:'General' }); setEditId(null); setSheet('cred') }}>＋ Add</button>
+          </div>
+
+          {credentials.length === 0 && (
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', padding:'48px 24px', textAlign:'center' }}>
+              <div style={{ width:'56px', height:'56px', borderRadius:'16px', background:C.mist, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'16px' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.slate} strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+              <div style={{ fontSize:'16px', fontWeight:700, color:C.navy, marginBottom:'6px' }}>No Credentials Saved</div>
+              <div style={{ fontSize:'13px', color:C.slate, lineHeight:1.6, marginBottom:'20px' }}>Store portal logins, vendor credentials and client access details securely.</div>
+              <button style={btnP} onClick={() => { setForm({ category:'General' }); setEditId(null); setSheet('cred') }}>＋ Add First Credential</button>
+            </div>
+          )}
+
+          {Object.entries(grouped).map(([cat, creds]: [string, any]) => (
+            <div key={cat} style={{ marginBottom:'20px' }}>
+              <div style={{ fontSize:'11px', fontWeight:700, color:C.slate, letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'8px', paddingLeft:'2px' }}>{cat}</div>
+              <div style={{ ...card }}>
+                {(creds as any[]).map((c: any, i: number) => (
+                  <div key={c.id} style={{ padding:'14px 16px', borderBottom: i < creds.length-1 ? `1px solid ${C.border}` : 'none' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'10px' }}>
+                      <div>
+                        <div style={{ fontSize:'15px', fontWeight:700, color:C.navy }}>{c.name}</div>
+                        {c.url && <div style={{ fontSize:'12px', color:C.teal, marginTop:'2px', cursor:'pointer' }} onClick={() => window.open(c.url.startsWith('http') ? c.url : 'https://'+c.url, '_blank')}>{c.url} ↗</div>}
+                      </div>
+                      <div style={{ display:'flex', gap:'6px' }}>
+                        <button style={btnG} onClick={() => { setForm({...c}); setEditId(c.id); setSheet('cred') }}>Edit</button>
+                        <button style={btnD} onClick={() => deleteCred(c.id)}>✕</button>
+                      </div>
+                    </div>
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
+                      {c.username && (
+                        <div style={{ padding:'10px 12px', background:C.mist, borderRadius:'10px' }}>
+                          <div style={{ fontSize:'10px', color:C.slate, fontWeight:700, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:'3px' }}>Username</div>
+                          <div style={{ fontSize:'13px', fontWeight:600, color:C.navy, display:'flex', alignItems:'center', gap:'6px' }}>
+                            <span style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.username}</span>
+                            <button onClick={() => { navigator.clipboard.writeText(c.username); alert('Copied!') }}
+                              style={{ background:'none', border:'none', cursor:'pointer', padding:'2px', color:C.slate, fontSize:'12px' }}>📋</button>
+                          </div>
+                        </div>
+                      )}
+                      {c.password && (
+                        <div style={{ padding:'10px 12px', background:C.mist, borderRadius:'10px' }}>
+                          <div style={{ fontSize:'10px', color:C.slate, fontWeight:700, textTransform:'uppercase', letterSpacing:'.06em', marginBottom:'3px' }}>Password</div>
+                          <div style={{ fontSize:'13px', fontWeight:600, color:C.navy, display:'flex', alignItems:'center', gap:'6px' }}>
+                            <span style={{ flex:1, letterSpacing: showPass[c.id] ? 'normal' : '0.15em' }}>
+                              {showPass[c.id] ? c.password : '••••••••'}
+                            </span>
+                            <button onClick={() => setShowPass(p => ({...p, [c.id]: !p[c.id]}))}
+                              style={{ background:'none', border:'none', cursor:'pointer', padding:'2px', color:C.slate, fontSize:'12px' }}>
+                              {showPass[c.id] ? '🙈' : '👁'}
+                            </button>
+                            <button onClick={() => { navigator.clipboard.writeText(c.password); alert('Copied!') }}
+                              style={{ background:'none', border:'none', cursor:'pointer', padding:'2px', color:C.slate, fontSize:'12px' }}>📋</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {c.notes && <div style={{ marginTop:'8px', fontSize:'12px', color:C.slate, padding:'8px 10px', background:C.mist, borderRadius:'8px', lineHeight:1.5 }}>{c.notes}</div>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {sheet === 'cred' && (
+            <Sheet title={editId ? 'Edit Credential' : 'Add Credential'} onClose={() => setSheet(null)}
+              footer={<><button onClick={() => setSheet(null)} style={{ ...btnG, flex:0 }}>Cancel</button><button onClick={saveCred} style={{ ...btnP, flex:1 }}>Save</button></>}>
+              <FG label="Name *"><input style={fieldStyle} value={gv('name')||''} onChange={e => sf('name',e.target.value)} placeholder="e.g. NHM Kerala Portal"/></FG>
+              <FG label="Category"><select style={{ ...fieldStyle, appearance:'none' }} value={gv('category')||'General'} onChange={e => sf('category',e.target.value)}>{CRED_CATS.map(c=><option key={c}>{c}</option>)}</select></FG>
+              <FG label="URL"><input style={fieldStyle} value={gv('url')||''} onChange={e => sf('url',e.target.value)} placeholder="https://..." type="url"/></FG>
+              <FG label="Username / Email"><input style={fieldStyle} value={gv('username')||''} onChange={e => sf('username',e.target.value)} autoComplete="off"/></FG>
+              <FG label="Password"><input style={fieldStyle} value={gv('password')||''} onChange={e => sf('password',e.target.value)} type="text" autoComplete="new-password"/></FG>
+              <FG label="Notes"><textarea style={{ ...fieldStyle, minHeight:'70px', resize:'vertical' }} value={gv('notes')||''} onChange={e => sf('notes',e.target.value)} placeholder="Any additional access details..."/></FG>
+            </Sheet>
+          )}
+        </div>
+      )
+    }
+
     return null
   }
 
@@ -704,9 +829,9 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
     <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:'15px', color:C.ink, paddingBottom:'80px' }}>
       {/* Header */}
       <div style={{ padding:'16px 16px 0' }}>
-        <div style={{ fontSize:'24px', fontWeight:800, color:C.navy, letterSpacing:'-0.025em' }}>Director Office</div>
+        <div style={{ fontSize:'26px', fontWeight:800, color:C.navy, letterSpacing:'-0.025em', lineHeight:1.2 }}>Director's Vault</div>
         <div style={goldRule}/>
-        <div style={{ fontSize:'12px', color:C.slate, marginTop:'5px' }}>Financial Command Center · {new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}</div>
+        <div style={{ fontSize:'12px', color:C.slate, marginTop:'5px' }}>Financial controls &amp; secure credentials · {new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}</div>
       </div>
 
       {/* Module tabs */}
