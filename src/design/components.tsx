@@ -5,6 +5,7 @@
 // ════════════════════════════════════════════════════════════
 import React from 'react'
 import { colors, space, radius, shadow, type as T_, text, motion, size, T } from './tokens'
+import { fmtMoney, smartDate, daysLeft, getStatus, projectHealth, HEALTH_LABEL, initials as bInitials } from './business'
 
 // ── Toast ────────────────────────────────────────────────────
 let _toastTimer: ReturnType<typeof setTimeout>
@@ -564,7 +565,7 @@ export function HeroCard({ label, value, sub, children }: HeroCardProps) {
 // ════════════════════════════════════════════════════════════
 // BUSINESS COMPONENTS — Stage 2.6
 // ════════════════════════════════════════════════════════════
-import { fmtMoney, smartDate, daysLeft, getStatus, projectHealth, HEALTH_LABEL, initials as bInitials } from './business'
+// business utils imported at top of file
 
 // ── EntityAvatar ─────────────────────────────────────────────
 // Extends Avatar with type variants.
