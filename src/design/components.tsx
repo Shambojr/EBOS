@@ -379,11 +379,11 @@ export function KPITile({ label, value, sub, trend, trendUp, accent, alert, load
           <Skeleton height="18px" width="60px" radius={radius.sm}/>
         </div>
       ) : (
-        <div style={{ fontSize: type.size2xl, fontWeight: type.weightBlack, color: valueColor, letterSpacing: '-0.02em', lineHeight: 1 }}>{value}</div>
+        <div style={{ fontSize: T_.size2xl, fontWeight: T_.weightBlack, color: valueColor, letterSpacing: '-0.02em', lineHeight: 1 }}>{value}</div>
       )}
       {sub && <div style={{ ...text.caption, color: alert ? colors.danger : colors.textTertiary, marginTop: '3px' }}>{sub}</div>}
       {trend && (
-        <div style={{ fontSize: type.sizeXs, fontWeight: type.weightSemibold, color: trendUp ? colors.success : colors.danger, marginTop: '4px' }}>
+        <div style={{ fontSize: T_.sizeXs, fontWeight: T_.weightSemibold, color: trendUp ? colors.success : colors.danger, marginTop: '4px' }}>
           {trendUp ? '↑' : '↓'} {trend}
         </div>
       )}
@@ -420,7 +420,7 @@ export function ConfirmDialog({ open, title, message, confirmLabel = 'Confirm', 
           )}
         </div>
         <div style={{ ...text.sectionTitle, color: colors.textPrimary, textAlign: 'center', marginBottom: space[2] }}>{title}</div>
-        {message && <div style={{ ...text.body, color: colors.textSecondary, textAlign: 'center', marginBottom: space[5], lineHeight: type.lineRelaxed }}>{message}</div>}
+        {message && <div style={{ ...text.body, color: colors.textSecondary, textAlign: 'center', marginBottom: space[5], lineHeight: T_.lineRelaxed }}>{message}</div>}
         <div style={{ display: 'flex', gap: space[2] }}>
           <button onClick={onCancel} style={{ ...T.btnSecondary, flex: 1 }}>{cancelLabel}</button>
           <button onClick={onConfirm} style={{ ...( danger ? T.btnDanger : T.btnPrimary ), flex: 1 }}>{confirmLabel}</button>
@@ -457,7 +457,7 @@ export function ListRow({ icon, iconBg, title, subtitle, trailing, onTap, danger
         </div>
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: type.sizeLg, fontWeight: type.weightSemibold, color: danger ? colors.danger : colors.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
+        <div style={{ fontSize: T_.sizeLg, fontWeight: T_.weightSemibold, color: danger ? colors.danger : colors.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
         {subtitle && <div style={{ ...text.caption, color: colors.textSecondary, marginTop: '2px' }}>{subtitle}</div>}
       </div>
       {trailing && <div style={{ flexShrink: 0 }}>{trailing}</div>}
@@ -497,10 +497,10 @@ export function ActivityItem({ date, type, desc, amount, dir = 'neutral', color,
       <div style={{ background: colors.bgSurface, border: `1px solid ${colors.border}`, borderRadius: radius.md, padding: `${space[2]} ${space[3]}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: shadow.xs }}>
         <div>
           <div style={{ ...text.labelXs, color: dotColor, marginBottom: '2px' }}>{type}</div>
-          <div style={{ fontSize: type.sizeMd, fontWeight: type.weightMedium, color: colors.textPrimary }}>{desc}</div>
+          <div style={{ fontSize: T_.sizeMd, fontWeight: T_.weightMedium, color: colors.textPrimary }}>{desc}</div>
         </div>
         {amount && (
-          <div style={{ fontSize: type.sizeLg, fontWeight: type.weightBold, color: amountColor, marginLeft: space[3], whiteSpace: 'nowrap' }}>{amount}</div>
+          <div style={{ fontSize: T_.sizeLg, fontWeight: T_.weightBold, color: amountColor, marginLeft: space[3], whiteSpace: 'nowrap' }}>{amount}</div>
         )}
       </div>
     </div>
@@ -553,7 +553,7 @@ interface HeroCardProps { label: string; value: string; sub?: string; children?:
 export function HeroCard({ label, value, sub, children }: HeroCardProps) {
   return (
     <div style={{ ...T.heroCard, margin: `0 ${space[4]} ${space[4]}` }}>
-      <div style={{ fontSize: type.sizeXs, fontWeight: type.weightSemibold, letterSpacing: type.trackingWidest, textTransform: 'uppercase', color: 'rgba(255,255,255,.6)', marginBottom: space[1] }}>{label}</div>
+      <div style={{ fontSize: T_.sizeXs, fontWeight: T_.weightSemibold, letterSpacing: T_.trackingWidest, textTransform: 'uppercase', color: 'rgba(255,255,255,.6)', marginBottom: space[1] }}>{label}</div>
       <div style={{ ...text.metricLarge, color: '#fff' }}>{value}</div>
       {sub && <div style={{ ...text.caption, color: 'rgba(255,255,255,.6)', marginTop: space[1] }}>{sub}</div>}
       {children && <div style={{ marginTop: space[4] }}>{children}</div>}
