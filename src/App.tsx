@@ -869,12 +869,9 @@ function InnerApp() {
   // ── PROJECTS LIST ──────────────────────────────────────────
   const ProjectsView = () => (
     <div style={{ padding:'16px', paddingBottom:'80px' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'20px' }}>
-        <div>
-          <div style={{ fontSize:'26px', fontWeight:800, color: C.navy, letterSpacing:'-0.025em', lineHeight:1.2 }}>Projects</div>
-          <div style={{ fontSize:'13px', color: C.slate, marginTop:'3px' }}>Construction sites and progress</div>
-        </div>
-        <button style={btnPrimary} onClick={() => { setProjForm({}); setEditProjId(null); setSheet('new-project') }}>＋ New</button>
+      <div style={{ marginBottom:'20px' }}>
+        <div style={{ fontSize:'26px', fontWeight:800, color: C.navy, letterSpacing:'-0.025em', lineHeight:1.2 }}>Projects</div>
+        <div style={{ fontSize:'13px', color: C.slate, marginTop:'3px' }}>Construction sites and progress</div>
       </div>
       {projLoading && (
         <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
