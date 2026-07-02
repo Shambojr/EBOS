@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useFinance, calcInterestAccrued, calcMonthlyInterest } from '../hooks/useFinance'
 import { colors as C_, space, radius as R, shadow, text as TT, T, type as TY, motion as MO } from '../design/tokens'
-import { Sheet, FormGroup as FG_ds, Grid2 as Grid2_ds, StatusBadge, SumCard, SectionHeader } from '../design/components'
+import { Sheet, StatusBadge, SumCard, KPITile, StatGrid, HeroCard, EnterpriseCard, ListRow, ActivityItem, ConfirmDialog, PageHeader } from '../design/components'
 import type { User, Project } from '../types'
 import type {
   Funding, Receivable, Payable, CashBookEntry,
@@ -144,24 +144,23 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
     // ── DASHBOARD ─────────────────────────────────────────────
     if (mod === 'dashboard') return (
       <div>
-        {/* Hero card */}
-        <div style={{ margin:'0 0 16px', background:`linear-gradient(135deg, ${C.navy} 0%, ${C.navyL} 100%)`, borderRadius:'24px', padding:'24px', boxShadow:'0 8px 24px rgba(15,31,42,.12), 0 4px 8px rgba(15,31,42,.06)', position:'relative', overflow:'hidden', color:'#fff' }}>
-          <div style={{ fontSize:'11px', fontWeight:700, letterSpacing:'.08em', textTransform:'uppercase', color:'rgba(255,255,255,.65)', marginBottom:'6px' }}>Cash Position</div>
-          <div style={{ fontSize:'34px', fontWeight:800, letterSpacing:'-0.02em' }}>{fmtCur(s.cashPosition)}</div>
-          <div style={{ fontSize:'12px', color:'rgba(255,255,255,.65)', marginTop:'4px' }}>{fin.accounts.length} bank account{fin.accounts.length===1?'':'s'}</div>
-          <div style={{ marginTop:'18px', display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'10px' }}>
-            <div><div style={{ fontSize:'10px', color:'rgba(255,255,255,.6)', fontWeight:700, textTransform:'uppercase', marginBottom:'3px' }}>30-Day In</div><div style={{ fontSize:'15px', fontWeight:700 }}>{fmtCur(s.expectedInflowThirtyDays)}</div></div>
-            <div><div style={{ fontSize:'10px', color:'rgba(255,255,255,.6)', fontWeight:700, textTransform:'uppercase', marginBottom:'3px' }}>30-Day Out</div><div style={{ fontSize:'15px', fontWeight:700 }}>{fmtCur(s.expectedOutflowThirtyDays)}</div></div>
-            <div><div style={{ fontSize:'10px', color:'rgba(255,255,255,.6)', fontWeight:700, textTransform:'uppercase', marginBottom:'3px' }}>Net</div><div style={{ fontSize:'15px', fontWeight:700, color: s.netCashProjection>=0?'#fff':'#fecaca' }}>{fmtCur(s.netCashProjection)}</div></div>
+        <HeroCard label="Cash Position" value={fmtCur(s.cashPosition)} sub={`${fin.accounts.length} bank account${fin.accounts.length===1?'':'s'}`}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'10px' }}>
+            {[['30-Day In', fmtCur(s.expectedInflowThirtyDays)], ['30-Day Out', fmtCur(s.expectedOutflowThirtyDays)], ['Net', fmtCur(s.netCashProjection)]].map(([lbl, val]) => (
+              <div key={lbl as string}>
+                <div style={{ fontSize:'10px', color:'rgba(255,255,255,.6)', fontWeight:700, textTransform:'uppercase', marginBottom:'3px' }}>{lbl}</div>
+                <div style={{ fontSize:'15px', fontWeight:700 }}>{val}</div>
+              </div>
+            ))}
           </div>
-        </div>
+        </HeroCard>
 
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'16px' }}>
-          <SumCard label="Receivables" value={fmtCur(s.outstandingReceivables)} sub={s.overdueReceivables > 0 ? `${fmtCur(s.overdueReceivables)} overdue` : 'All current'}/>
-          <SumCard label="Payables" value={fmtCur(s.outstandingPayables)} sub={s.overduePayables > 0 ? `${fmtCur(s.overduePayables)} overdue` : 'All current'} alert={s.overduePayables > 0}/>
-          <SumCard label="Total Funding" value={fmtCur(s.totalActiveFunding)} sub="outstanding principal"/>
-          <SumCard label="Interest/Month" value={fmtCur(s.interestDueThisMonth)} sub="across all loans" alert={s.interestDueThisMonth > 50000}/>
-        </div>
+        <StatGrid tiles={[
+          {label:'Receivables',    value:fmtCur(s.outstandingReceivables), sub: s.overdueReceivables > 0 ? `${fmtCur(s.overdueReceivables)} overdue` : 'All current', alert: s.overdueReceivables > 0, onClick: () => setMod('receivables')},
+          {label:'Payables',       value:fmtCur(s.outstandingPayables),    sub: s.overduePayables > 0 ? `${fmtCur(s.overduePayables)} overdue` : 'All current', alert: s.overduePayables > 0, onClick: () => setMod('payables')},
+          {label:'Total Funding',  value:fmtCur(s.totalActiveFunding),     sub:'outstanding principal', onClick: () => setMod('funding')},
+          {label:'Interest/Month', value:fmtCur(s.interestDueThisMonth),   sub:'across all loans', alert: s.interestDueThisMonth > 50000},
+        ]}/>
 
         {/* Alerts */}
         {(s.overdueReceivables > 0 || s.overduePayables > 0 || s.overdueFunding > 0) && (

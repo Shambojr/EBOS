@@ -12,7 +12,7 @@ import { supabase } from './lib/supabase'
 import { logActivity } from './lib/logger'
 import { LOGO_NAVY } from './assets/logo'
 import { colors as C_, space, radius as R, shadow, text as TT, T, type as TY, motion as MO, iconSize } from './design/tokens'
-import { toast, Sheet, FormGroup, RangeField, EmptyState, HealthBadge, Badge, SyncIndicator, Avatar, ProgressBar } from './design/components'
+import { toast, Sheet, FormGroup, RangeField, EmptyState, HealthBadge, Badge, SyncIndicator, Avatar, ProgressBar, EnterpriseCard, KPITile, StatGrid, HeroCard, ConfirmDialog, ListRow, ActivityItem, FormSection, PageHeader } from './design/components'
 import type { Project, Milestone, UserRole } from './types'
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -819,20 +819,12 @@ function InnerApp() {
         />
       ) : (
         <div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px', padding:'0 16px', marginBottom:'16px' }}>
-            {[
-              {label:'Active', value:projects.filter(p=>p.status==='Active').length, color:'blue'},
-              {label:'Delayed', value:projects.filter(p=>projectHealth(p)==='red').length, color:'red'},
-              {label:'Budget', value:fmtCur(projects.reduce((s,p)=>s+(p.budget??0),0)), color:'gold'},
-              {label:'Pending', value:0, color:'amber'},
-            ].map(s => (
-              <div key={s.label} style={{ ...card, padding:'14px', position:'relative', overflow:'hidden' }}>
-                <div style={{ position:'absolute', left:0, top:0, bottom:0, width:'3px', background: s.color==='gold'?C.gold:s.color==='green'?C.green:s.color==='red'?C.red:s.color==='amber'?C.amber:C.blue, borderRadius:'12px 0 0 12px' }}/>
-                <div style={{ fontSize:'10px', fontWeight:700, color: C.slate, letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'6px', paddingLeft:'6px' }}>{s.label}</div>
-                <div style={{ fontSize:'24px', fontWeight:800, color: C.navy, letterSpacing:'-0.02em', paddingLeft:'6px' }}>{s.value}</div>
-              </div>
-            ))}
-          </div>
+          <StatGrid tiles={[
+            {label:'Active',  value:String(projects.filter(p=>p.status==='Active').length)},
+            {label:'Delayed', value:String(projects.filter(p=>projectHealth(p)==='red').length), alert:projects.filter(p=>projectHealth(p)==='red').length>0},
+            {label:'Budget',  value:fmtCur(projects.reduce((s,p)=>s+(p.budget??0),0)), accent:C.gold},
+            {label:'Pending', value:'0'},
+          ]}/>
           <div style={{ fontSize:'11px', fontWeight:700, color: C.slate, letterSpacing:'.1em', textTransform:'uppercase', padding:'0 16px', marginBottom:'8px' }}>Project Health</div>
           <div style={{ width:'28px', height:'2.5px', background: C.gold, borderRadius:'2px', margin:'0 0 12px 16px' }}/>
           <div style={{ padding:'0 16px' }}>

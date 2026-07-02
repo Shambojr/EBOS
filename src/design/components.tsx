@@ -265,3 +265,298 @@ export function Skeleton({ width = '100%', height = '16px', radius: r = radius.s
     </div>
   )
 }
+
+// ════════════════════════════════════════════════════════════
+// ENTERPRISE COMPONENT LIBRARY — Stage 2.5
+// ════════════════════════════════════════════════════════════
+
+// ── EnterpriseCard ───────────────────────────────────────────
+// Unified card component. Replaces all inline `...card` spreads.
+// Usage: <EnterpriseCard variant="metric" title="Budget" .../>
+interface EnterpriseCardProps {
+  variant?: 'default' | 'metric' | 'dashboard' | 'list' | 'alert' | 'action' | 'flush'
+  title?: string
+  subtitle?: string
+  icon?: React.ReactNode
+  trailing?: React.ReactNode
+  footer?: React.ReactNode
+  status?: 'success' | 'warning' | 'danger' | 'info' | 'brand'
+  loading?: boolean
+  onClick?: () => void
+  children?: React.ReactNode
+  style?: React.CSSProperties
+  noPad?: boolean
+}
+
+export function EnterpriseCard({
+  variant = 'default', title, subtitle, icon, trailing, footer,
+  status, loading, onClick, children, style, noPad
+}: EnterpriseCardProps) {
+  const statusColors: Record<string, string> = {
+    success: colors.success, warning: colors.warning,
+    danger: colors.danger, info: colors.info, brand: colors.brand,
+  }
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        background: colors.bgSurface,
+        border: `1px solid ${colors.border}`,
+        borderRadius: radius.lg,
+        boxShadow: shadow.sm,
+        overflow: 'hidden',
+        cursor: onClick ? 'pointer' : 'default',
+        ...style,
+      }}
+    >
+      {/* Status bar */}
+      {status && <div style={{ height: '3px', background: statusColors[status] }}/>}
+
+      {/* Header */}
+      {(title || icon || trailing) && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: space[3], padding: noPad ? '0' : `${space[4]} ${space[4]} ${children ? space[2] : space[4]}` }}>
+          {icon && (
+            <div style={{ width: '36px', height: '36px', borderRadius: radius.md, background: colors.bgMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: colors.textSecondary }}>
+              {icon}
+            </div>
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {title && <div style={{ ...text.cardTitle, color: colors.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>}
+            {subtitle && <div style={{ ...text.caption, color: colors.textSecondary, marginTop: '2px' }}>{subtitle}</div>}
+          </div>
+          {trailing && <div style={{ flexShrink: 0 }}>{trailing}</div>}
+        </div>
+      )}
+
+      {/* Body */}
+      {loading ? (
+        <div style={{ padding: space[4], display: 'flex', flexDirection: 'column', gap: space[2] }}>
+          <Skeleton height="14px" radius={radius.sm}/>
+          <Skeleton height="14px" radius={radius.sm} width="70%"/>
+        </div>
+      ) : children ? (
+        <div style={{ padding: noPad || title ? `0 ${space[4]} ${space[4]}` : space[4] }}>{children}</div>
+      ) : null}
+
+      {/* Footer */}
+      {footer && (
+        <div style={{ padding: `${space[3]} ${space[4]}`, borderTop: `1px solid ${colors.divider}`, display: 'flex', gap: space[2] }}>
+          {footer}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── KPITile ──────────────────────────────────────────────────
+// Unified KPI / metric tile. Replaces SumCard and inline stat cards.
+// Usage: <KPITile label="Cash Position" value="₹4.2L" trend="+12%" trendUp/>
+interface KPITileProps {
+  label: string
+  value: string
+  sub?: string
+  trend?: string
+  trendUp?: boolean
+  accent?: string
+  alert?: boolean
+  loading?: boolean
+  onClick?: () => void
+}
+
+export function KPITile({ label, value, sub, trend, trendUp, accent, alert, loading, onClick }: KPITileProps) {
+  const bg = alert ? colors.dangerBg : colors.bgMuted
+  const valueColor = alert ? colors.danger : colors.textPrimary
+  const accentBar = alert ? colors.danger : (accent ?? colors.brand)
+
+  return (
+    <div onClick={onClick} style={{ textAlign: 'center', padding: `${space[3]} ${space[2]}`, background: bg, borderRadius: radius.lg, cursor: onClick ? 'pointer' : 'default', position: 'relative', overflow: 'hidden' }}>
+      {/* Accent dot */}
+      <div style={{ width: '6px', height: '6px', borderRadius: radius.pill, background: accentBar, margin: `0 auto ${space[1]}` }}/>
+      <div style={{ ...text.labelXs, color: alert ? colors.danger : colors.textSecondary, marginBottom: space[1] }}>{label}</div>
+      {loading ? (
+        <div style={{ height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Skeleton height="18px" width="60px" radius={radius.sm}/>
+        </div>
+      ) : (
+        <div style={{ fontSize: type.size2xl, fontWeight: type.weightBlack, color: valueColor, letterSpacing: '-0.02em', lineHeight: 1 }}>{value}</div>
+      )}
+      {sub && <div style={{ ...text.caption, color: alert ? colors.danger : colors.textTertiary, marginTop: '3px' }}>{sub}</div>}
+      {trend && (
+        <div style={{ fontSize: type.sizeXs, fontWeight: type.weightSemibold, color: trendUp ? colors.success : colors.danger, marginTop: '4px' }}>
+          {trendUp ? '↑' : '↓'} {trend}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── ConfirmDialog ─────────────────────────────────────────────
+// Replaces every window.confirm() call.
+// Usage: <ConfirmDialog open={open} title="Delete project?" ... />
+interface ConfirmDialogProps {
+  open: boolean
+  title: string
+  message?: string
+  confirmLabel?: string
+  cancelLabel?: string
+  danger?: boolean
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+export function ConfirmDialog({ open, title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', danger, onConfirm, onCancel }: ConfirmDialogProps) {
+  if (!open) return null
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: colors.bgOverlay, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: space[5] }}
+      onClick={e => e.target === e.currentTarget && onCancel()}>
+      <div style={{ background: colors.bgSurface, borderRadius: radius.xl, padding: space[6], width: '100%', maxWidth: '320px', boxShadow: shadow.modal }}>
+        {/* Icon */}
+        <div style={{ width: '48px', height: '48px', borderRadius: radius.lg, background: danger ? colors.dangerBg : colors.bgMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: `0 auto ${space[4]}` }}>
+          {danger ? (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.danger} strokeWidth="2" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          ) : (
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={colors.textSecondary} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          )}
+        </div>
+        <div style={{ ...text.sectionTitle, color: colors.textPrimary, textAlign: 'center', marginBottom: space[2] }}>{title}</div>
+        {message && <div style={{ ...text.body, color: colors.textSecondary, textAlign: 'center', marginBottom: space[5], lineHeight: type.lineRelaxed }}>{message}</div>}
+        <div style={{ display: 'flex', gap: space[2] }}>
+          <button onClick={onCancel} style={{ ...T.btnSecondary, flex: 1 }}>{cancelLabel}</button>
+          <button onClick={onConfirm} style={{ ...( danger ? T.btnDanger : T.btnPrimary ), flex: 1 }}>{confirmLabel}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── ListRow ───────────────────────────────────────────────────
+// Reusable list row. Used in More, Documents, Notifications, Credentials.
+// Usage: <ListRow icon={...} title="User Management" subtitle="..." onTap={...} trailing={...}/>
+interface ListRowProps {
+  icon?: React.ReactNode
+  iconBg?: string
+  title: string
+  subtitle?: string
+  trailing?: React.ReactNode
+  onTap?: () => void
+  danger?: boolean
+  showChevron?: boolean
+  borderBottom?: boolean
+}
+
+export function ListRow({ icon, iconBg, title, subtitle, trailing, onTap, danger, showChevron = true, borderBottom = true }: ListRowProps) {
+  return (
+    <div
+      onClick={onTap}
+      style={{ display: 'flex', gap: space[3], alignItems: 'center', padding: `${space[3]} ${space[4]}`, borderBottom: borderBottom ? `1px solid ${colors.divider}` : 'none', cursor: onTap ? 'pointer' : 'default', WebkitTapHighlightColor: 'transparent' } as React.CSSProperties}
+    >
+      {icon && (
+        <div style={{ width: '36px', height: '36px', borderRadius: radius.md, background: iconBg ?? colors.bgMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          {icon}
+        </div>
+      )}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: type.sizeLg, fontWeight: type.weightSemibold, color: danger ? colors.danger : colors.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
+        {subtitle && <div style={{ ...text.caption, color: colors.textSecondary, marginTop: '2px' }}>{subtitle}</div>}
+      </div>
+      {trailing && <div style={{ flexShrink: 0 }}>{trailing}</div>}
+      {showChevron && onTap && !trailing && (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}><polyline points="9 18 15 12 9 6"/></svg>
+      )}
+    </div>
+  )
+}
+
+// ── ActivityItem ──────────────────────────────────────────────
+// Reusable timeline entry. Used in Finance Timeline, Activity Feed.
+// Usage: <ActivityItem date="2 Jun" type="Receivable" desc="Client payment" amount="+₹2L" dir="in"/>
+interface ActivityItemProps {
+  date: string
+  type: string
+  desc: string
+  amount?: string
+  dir?: 'in' | 'out' | 'neutral'
+  color?: string
+  isLast?: boolean
+}
+
+export function ActivityItem({ date, type, desc, amount, dir = 'neutral', color, isLast }: ActivityItemProps) {
+  const dotColor = color ?? (dir === 'in' ? colors.success : dir === 'out' ? colors.danger : colors.textSecondary)
+  const amountColor = dir === 'in' ? colors.success : dir === 'out' ? colors.danger : colors.textPrimary
+
+  return (
+    <div style={{ position: 'relative', paddingLeft: space[8], marginBottom: isLast ? 0 : space[4] }}>
+      {/* Vertical line */}
+      {!isLast && <div style={{ position: 'absolute', left: '9px', top: '18px', bottom: `-${space[4]}`, width: '1px', background: colors.divider }}/>}
+      {/* Dot */}
+      <div style={{ position: 'absolute', left: '4px', top: '4px', width: '10px', height: '10px', borderRadius: radius.pill, background: dotColor, border: `2px solid ${colors.bgSurface}`, boxShadow: `0 0 0 1.5px ${colors.border}` }}/>
+      {/* Date */}
+      <div style={{ ...text.caption, color: colors.textTertiary, marginBottom: '3px' }}>{date}</div>
+      {/* Card */}
+      <div style={{ background: colors.bgSurface, border: `1px solid ${colors.border}`, borderRadius: radius.md, padding: `${space[2]} ${space[3]}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: shadow.xs }}>
+        <div>
+          <div style={{ ...text.labelXs, color: dotColor, marginBottom: '2px' }}>{type}</div>
+          <div style={{ fontSize: type.sizeMd, fontWeight: type.weightMedium, color: colors.textPrimary }}>{desc}</div>
+        </div>
+        {amount && (
+          <div style={{ fontSize: type.sizeLg, fontWeight: type.weightBold, color: amountColor, marginLeft: space[3], whiteSpace: 'nowrap' }}>{amount}</div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── FormSection ───────────────────────────────────────────────
+// Groups related form fields with a section title.
+// Usage: <FormSection title="Project Details"><FormGroup .../></FormSection>
+export function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: space[5] }}>
+      <div style={{ ...text.label, color: colors.textSecondary, marginBottom: space[3], paddingBottom: space[2], borderBottom: `1px solid ${colors.divider}` }}>{title}</div>
+      {children}
+    </div>
+  )
+}
+
+// ── PageHeader ────────────────────────────────────────────────
+// Consistent page title + subtitle used across all main pages.
+// Usage: <PageHeader title="Projects" subtitle="Track construction progress"/>
+export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: `${space[5]} ${space[4]} ${space[4]}` }}>
+      <div>
+        <div style={{ ...text.pageTitle, color: colors.brand }}>{title}</div>
+        {subtitle && <div style={{ ...text.caption, color: colors.textSecondary, marginTop: '3px' }}>{subtitle}</div>}
+      </div>
+      {action && <div style={{ flexShrink: 0 }}>{action}</div>}
+    </div>
+  )
+}
+
+// ── StatGrid ──────────────────────────────────────────────────
+// 2-column KPI grid. Wraps KPITile for consistent spacing.
+// Usage: <StatGrid tiles={[{label:'Budget', value:'₹10L'}, ...]}/>
+interface StatTile { label: string; value: string; sub?: string; alert?: boolean; accent?: string; onClick?: () => void }
+export function StatGrid({ tiles }: { tiles: StatTile[] }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: space[2], padding: `0 ${space[4]}`, marginBottom: space[4] }}>
+      {tiles.map(t => <KPITile key={t.label} {...t}/>)}
+    </div>
+  )
+}
+
+// ── HeroCard ──────────────────────────────────────────────────
+// Gradient navy hero card used on Finance dashboard, Expenses tab.
+// Usage: <HeroCard label="Total Spent" value="₹4.96L" sub="6% of budget"/>
+interface HeroCardProps { label: string; value: string; sub?: string; children?: React.ReactNode }
+export function HeroCard({ label, value, sub, children }: HeroCardProps) {
+  return (
+    <div style={{ ...T.heroCard, margin: `0 ${space[4]} ${space[4]}` }}>
+      <div style={{ fontSize: type.sizeXs, fontWeight: type.weightSemibold, letterSpacing: type.trackingWidest, textTransform: 'uppercase', color: 'rgba(255,255,255,.6)', marginBottom: space[1] }}>{label}</div>
+      <div style={{ ...text.metricLarge, color: '#fff' }}>{value}</div>
+      {sub && <div style={{ ...text.caption, color: 'rgba(255,255,255,.6)', marginTop: space[1] }}>{sub}</div>}
+      {children && <div style={{ marginTop: space[4] }}>{children}</div>}
+    </div>
+  )
+}
