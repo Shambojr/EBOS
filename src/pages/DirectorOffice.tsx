@@ -790,7 +790,7 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
       const CRED_CATS = ['General','Government Portal','Client Portal','Vendor Portal','Banking','Email','Other']
 
       const loadCreds = async () => {
-        const { data } = supabase.from('vault_credentials').select('*').order('category').order('name')
+        const { data } = await supabase.from('vault_credentials').select('*').order('category').order('name')
         if (data) setCredentials(data)
       }
       if (credentials.length === 0) { loadCreds() }
