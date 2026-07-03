@@ -1,3 +1,4 @@
+// EBOS Site Manager — Stage 3 complete
 import { useState, useEffect, useRef } from 'react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { useProjects } from './hooks/useProjects'
