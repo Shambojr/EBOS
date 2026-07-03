@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useFinance, calcInterestAccrued, calcMonthlyInterest } from '../hooks/useFinance'
+import { supabase } from '../lib/supabase'
 import { colors as C_, space, radius as R, shadow, text as TT, T, type as TY, motion as MO } from '../design/tokens'
 import { fmtMoney, smartDate, getStatus } from '../design/business'
 import { Sheet, StatusBadge, SumCard, KPITile, StatGrid, HeroCard, EnterpriseCard, ListRow, ActivityItem, ConfirmDialog, PageHeader } from '../design/components'
@@ -146,64 +147,91 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
     // ── DASHBOARD ─────────────────────────────────────────────
     if (mod === 'dashboard') return (
       <div>
-        <HeroCard label="Cash Position" value={fmtCur(s.cashPosition)} sub={`${fin.accounts.length} bank account${fin.accounts.length===1?'':'s'}`}>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'10px' }}>
-            {[['30-Day In', fmtCur(s.expectedInflowThirtyDays)], ['30-Day Out', fmtCur(s.expectedOutflowThirtyDays)], ['Net', fmtCur(s.netCashProjection)]].map(([lbl, val]) => (
-              <div key={lbl as string}>
-                <div style={{ fontSize:'10px', color:'rgba(255,255,255,.6)', fontWeight:700, textTransform:'uppercase', marginBottom:'3px' }}>{lbl}</div>
-                <div style={{ fontSize:'15px', fontWeight:700 }}>{val}</div>
-              </div>
-            ))}
-          </div>
-        </HeroCard>
-
+        {/* KPI tiles */}
         <StatGrid tiles={[
           {label:'Receivables',    value:fmtCur(s.outstandingReceivables), sub: s.overdueReceivables > 0 ? `${fmtCur(s.overdueReceivables)} overdue` : 'All current', alert: s.overdueReceivables > 0, onClick: () => setMod('receivables')},
           {label:'Payables',       value:fmtCur(s.outstandingPayables),    sub: s.overduePayables > 0 ? `${fmtCur(s.overduePayables)} overdue` : 'All current', alert: s.overduePayables > 0, onClick: () => setMod('payables')},
-          {label:'Total Funding',  value:fmtCur(s.totalActiveFunding),     sub:'outstanding principal', onClick: () => setMod('funding')},
+          {label:'Active Funding', value:fmtCur(s.totalActiveFunding),     sub:'outstanding principal', onClick: () => setMod('funding')},
           {label:'Interest/Month', value:fmtCur(s.interestDueThisMonth),   sub:'across all loans', alert: s.interestDueThisMonth > 50000},
         ]}/>
 
-        {/* Alerts */}
+        {/* Financial Alerts */}
         {(s.overdueReceivables > 0 || s.overduePayables > 0 || s.overdueFunding > 0) && (
-          <div style={{ marginBottom:'16px' }}>
-            <div style={{ fontSize:'11px', fontWeight:700, color:C.slate, letterSpacing:'.1em', textTransform:'uppercase', marginBottom:'10px' }}>⚠ Financial Alerts</div>
-            {s.overdueReceivables > 0 && <div style={{ padding:'12px 14px', background:C.redBg, borderLeft:`3px solid ${C.red}`, borderRadius:'0 12px 12px 0', marginBottom:'8px', fontSize:'13px', cursor:'pointer' }} onClick={() => setMod('receivables')}>Overdue receivables: <strong>{fmtCur(s.overdueReceivables)}</strong> — clients haven't paid</div>}
-            {s.overduePayables > 0 && <div style={{ padding:'12px 14px', background:C.amberBg, borderLeft:`3px solid ${C.amber}`, borderRadius:'0 12px 12px 0', marginBottom:'8px', fontSize:'13px', cursor:'pointer' }} onClick={() => setMod('payables')}>Overdue payables: <strong>{fmtCur(s.overduePayables)}</strong> — vendors waiting</div>}
-            {s.overdueFunding > 0 && <div style={{ padding:'12px 14px', background:C.redBg, borderLeft:`3px solid ${C.red}`, borderRadius:'0 12px 12px 0', marginBottom:'8px', fontSize:'13px', cursor:'pointer' }} onClick={() => setMod('funding')}>Overdue loan repayments: <strong>{fmtCur(s.overdueFunding)}</strong></div>}
-          </div>
-        )}
-
-        {/* Bank accounts quick view */}
-        {fin.accounts.length > 0 && (
-          <div style={{ ...card, marginBottom:'16px' }}>
-            <div style={{ padding:'14px 16px', borderBottom:`1px solid ${C.border}`, fontSize:'14px', fontWeight:700, color:C.navy }}>Bank Accounts</div>
-            {fin.accounts.map(a => (
-              <div key={a.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'13px 16px', borderBottom:`1px solid ${C.border}` }}>
-                <div><div style={{ fontSize:'14px', fontWeight:600 }}>{a.name}</div><div style={{ fontSize:'12px', color:C.slate }}>{a.bank_name} · {a.account_type}</div></div>
-                <div style={{ fontSize:'16px', fontWeight:800, color: a.current_balance >= 0 ? C.navy : C.red }}>{fmtCur(a.current_balance)}</div>
+          <div style={{ marginBottom:space[4] }}>
+            <div style={{ fontSize:'10px', fontWeight:700, color:C.slate, letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:space[2] }}>Financial Alerts</div>
+            {s.overdueReceivables > 0 && (
+              <div onClick={() => setMod('receivables')} style={{ display:'flex', gap:space[3], alignItems:'center', padding:`${space[3]} ${space[4]}`, background:C_.dangerBg, borderLeft:`3px solid ${C_.danger}`, borderRadius:`0 ${R.lg} ${R.lg} 0`, marginBottom:space[2], cursor:'pointer' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C_.danger} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:'13px', fontWeight:600, color:C_.danger }}>Overdue Receivables</div>
+                  <div style={{ fontSize:'12px', color:C_.danger, opacity:0.75 }}>{fmtCur(s.overdueReceivables)} from clients · Tap to review</div>
+                </div>
               </div>
-            ))}
+            )}
+            {s.overduePayables > 0 && (
+              <div onClick={() => setMod('payables')} style={{ display:'flex', gap:space[3], alignItems:'center', padding:`${space[3]} ${space[4]}`, background:C_.warningBg, borderLeft:`3px solid ${C_.warning}`, borderRadius:`0 ${R.lg} ${R.lg} 0`, marginBottom:space[2], cursor:'pointer' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C_.warning} strokeWidth="2" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:'13px', fontWeight:600, color:C_.warning }}>Overdue Payables</div>
+                  <div style={{ fontSize:'12px', color:C_.warning, opacity:0.75 }}>{fmtCur(s.overduePayables)} owed to vendors · Tap to review</div>
+                </div>
+              </div>
+            )}
+            {s.overdueFunding > 0 && (
+              <div onClick={() => setMod('funding')} style={{ display:'flex', gap:space[3], alignItems:'center', padding:`${space[3]} ${space[4]}`, background:C_.dangerBg, borderLeft:`3px solid ${C_.danger}`, borderRadius:`0 ${R.lg} ${R.lg} 0`, marginBottom:space[2], cursor:'pointer' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C_.danger} strokeWidth="2" strokeLinecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:'13px', fontWeight:600, color:C_.danger }}>Loan Repayment Overdue</div>
+                  <div style={{ fontSize:'12px', color:C_.danger, opacity:0.75 }}>{fmtCur(s.overdueFunding)} outstanding · Tap to review</div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Upcoming payments this week */}
+        {/* Bank Accounts */}
+        {fin.accounts.length > 0 && (
+          <div style={{ marginBottom:space[4] }}>
+            <div style={{ fontSize:'10px', fontWeight:700, color:C.slate, letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:space[2] }}>Bank Accounts</div>
+            <div style={{ ...card }}>
+              {fin.accounts.map((a, i) => (
+                <div key={a.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:`${space[3]} ${space[4]}`, borderBottom: i < fin.accounts.length-1 ? `1px solid ${C.border}` : 'none' }}>
+                  <div>
+                    <div style={{ fontSize:'14px', fontWeight:600, color:C.ink }}>{a.name}</div>
+                    <div style={{ fontSize:'12px', color:C.slate, marginTop:'2px' }}>{a.bank_name} · {a.account_type}</div>
+                  </div>
+                  <div style={{ fontSize:'18px', fontWeight:800, color: a.current_balance >= 0 ? C.navy : C_.danger, letterSpacing:'-0.02em' }}>{fmtCur(a.current_balance)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* This Week Commitments */}
         {(() => {
           const week = new Date(); week.setDate(week.getDate() + 7)
           const upcoming = [
-            ...fin.receivables.filter(r => r.expected_date && new Date(r.expected_date) <= week && r.status !== 'Paid').map(r => ({ label: `Receive: ${r.client_name}`, amount: r.balance ?? 0, date: r.expected_date!, dir: 'in' as const })),
-            ...fin.payables.filter(p => p.due_date && new Date(p.due_date) <= week && p.status !== 'Paid').map(p => ({ label: `Pay: ${p.supplier_name}`, amount: p.outstanding ?? 0, date: p.due_date!, dir: 'out' as const })),
+            ...fin.receivables.filter(r => r.expected_date && new Date(r.expected_date) <= week && r.status !== 'Paid').map(r => ({ label: r.client_name, sub:`Bill ${r.bill_number}`, amount: r.balance ?? 0, date: r.expected_date!, dir: 'in' as const })),
+            ...fin.payables.filter(p => p.due_date && new Date(p.due_date) <= week && p.status !== 'Paid').map(p => ({ label: p.supplier_name, sub: p.invoice_number ?? 'Invoice', amount: p.outstanding ?? 0, date: p.due_date!, dir: 'out' as const })),
           ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
           if (!upcoming.length) return null
           return (
-            <div style={{ ...card, marginBottom:'16px' }}>
-              <div style={{ padding:'14px 16px', borderBottom:`1px solid ${C.border}`, fontSize:'14px', fontWeight:700, color:C.navy }}>This Week's Commitments</div>
-              {upcoming.map((u, i) => (
-                <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px', borderBottom:`1px solid ${C.border}` }}>
-                  <div><div style={{ fontSize:'14px', fontWeight:500 }}>{u.label}</div><div style={{ fontSize:'12px', color:C.slate }}>{fmtDate(u.date)}</div></div>
-                  <div style={{ fontSize:'15px', fontWeight:700, color: u.dir === 'in' ? C.green : C.red }}>{u.dir === 'in' ? '+' : '-'}{fmtCur(u.amount)}</div>
-                </div>
-              ))}
+            <div style={{ marginBottom:space[4] }}>
+              <div style={{ fontSize:'10px', fontWeight:700, color:C.slate, letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:space[2] }}>This Week's Commitments</div>
+              <div style={{ ...card }}>
+                {upcoming.map((u, i) => (
+                  <div key={i} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:`${space[3]} ${space[4]}`, borderBottom: i < upcoming.length-1 ? `1px solid ${C.border}` : 'none' }}>
+                    <div style={{ display:'flex', gap:space[3], alignItems:'center' }}>
+                      <div style={{ width:'8px', height:'8px', borderRadius:R.pill, background: u.dir === 'in' ? C_.success : C_.danger, flexShrink:0 }}/>
+                      <div>
+                        <div style={{ fontSize:'14px', fontWeight:500, color:C.ink }}>{u.dir === 'in' ? '↓ ' : '↑ '}{u.label}</div>
+                        <div style={{ fontSize:'12px', color:C.slate }}>{u.sub} · {fmtDate(u.date)}</div>
+                      </div>
+                    </div>
+                    <div style={{ fontSize:'15px', fontWeight:700, color: u.dir === 'in' ? C_.success : C_.danger }}>{u.dir === 'in' ? '+' : '-'}{fmtCur(u.amount)}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           )
         })()}
@@ -216,37 +244,57 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
         <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'14px' }}>
           <button style={btnP} onClick={() => { setForm({ interest_type:'None', interest_rate:0, status:'Active' }); setEditId(null); setSheet('funding') }}>＋ Add Funding</button>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'16px' }}>
-          <SumCard label="Total Borrowed" value={fmtCur(fin.funding.reduce((s,f)=>s+f.amount_received,0))}/>
-          <SumCard label="Outstanding" value={fmtCur(s.totalActiveFunding)}/>
-          <SumCard label="Interest/Month" value={fmtCur(s.interestDueThisMonth)}/>
-          <SumCard label="Active Loans" value={String(fin.funding.filter(f=>f.status==='Active'||f.status==='Partially Repaid').length)}/>
-        </div>
+        <StatGrid tiles={[
+          {label:'Total Borrowed',  value:fmtCur(fin.funding.reduce((s,f)=>s+f.amount_received,0)), accent:C_.info},
+          {label:'Outstanding',     value:fmtCur(s.totalActiveFunding), alert:s.totalActiveFunding>0},
+          {label:'Interest/Month',  value:fmtCur(s.interestDueThisMonth), alert:s.interestDueThisMonth>50000},
+          {label:'Active Loans',    value:String(fin.funding.filter(f=>f.status==='Active'||f.status==='Partially Repaid').length)},
+        ]}/>
         {!fin.funding.length && <div style={{ textAlign:'center', padding:'40px', color:C.slate }}>No funding records yet.</div>}
         {fin.funding.map(f => {
           const outstanding = f.amount_received - f.amount_repaid
           const interest = calcInterestAccrued(f)
+          const repaidPct = f.amount_received > 0 ? Math.round((f.amount_repaid/f.amount_received)*100) : 0
+          const isOD = (f.days_overdue ?? 0) > 0
           return (
-            <div key={f.id} style={{ ...card, marginBottom:'14px' }}>
-              <div style={{ padding:'14px 16px', borderBottom:`1px solid ${C.border}` }}>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'10px' }}>
-                  <div style={{ flex:1 }}><div style={{ fontSize:'15px', fontWeight:700 }}>{f.source_name}</div><div style={{ fontSize:'12px', color:C.slate, marginTop:'2px' }}>{f.category} · {f.lender_name || '—'}</div></div>
+            <div key={f.id} style={{ ...card, marginBottom:space[3], border: isOD ? `1px solid ${C_.danger}` : `1px solid ${C_.border}` }}>
+              {isOD && <div style={{ height:'3px', background:C_.danger }}/>}
+              <div style={{ padding:`${space[3]} ${space[4]}` }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:space[3] }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:'16px', fontWeight:700, color:C.ink }}>{f.source_name}</div>
+                    <div style={{ fontSize:'12px', color:C.slate, marginTop:'2px' }}>{f.category}{f.lender_name ? ` · ${f.lender_name}` : ''}</div>
+                  </div>
                   <StatusBadge status={f.status}/>
                 </div>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'8px', marginTop:'10px' }}>
-                  <div style={{ textAlign:'center', padding:'10px', background:C.mist, borderRadius:'10px' }}><div style={{ fontSize:'9px', color:C.slate, fontWeight:700, textTransform:'uppercase' }}>Received</div><div style={{ fontSize:'14px', fontWeight:800, color:C.navy, marginTop:'3px' }}>{fmtCur(f.amount_received)}</div></div>
-                  <div style={{ textAlign:'center', padding:'10px', background: outstanding>0?C.redBg:C.greenBg, borderRadius:'10px' }}><div style={{ fontSize:'9px', color: outstanding>0?C.red:C.green, fontWeight:700, textTransform:'uppercase' }}>Outstanding</div><div style={{ fontSize:'14px', fontWeight:800, color:outstanding>0?C.red:C.green, marginTop:'3px' }}>{fmtCur(outstanding)}</div></div>
-                  <div style={{ textAlign:'center', padding:'10px', background:C.amberBg, borderRadius:'10px' }}><div style={{ fontSize:'9px', color:C.amber, fontWeight:700, textTransform:'uppercase' }}>Interest</div><div style={{ fontSize:'14px', fontWeight:800, color:C.amber, marginTop:'3px' }}>{fmtCur(interest)}</div></div>
+                <div style={{ marginBottom:space[3] }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:space[1] }}>
+                    <span style={{ fontSize:'12px', color:C.slate }}>Repaid: {fmtCur(f.amount_repaid)}</span>
+                    <span style={{ fontSize:'12px', fontWeight:700, color:C_.success }}>{repaidPct}%</span>
+                  </div>
+                  <div style={{ height:'4px', background:C_.bgMuted, borderRadius:R.pill, overflow:'hidden' }}>
+                    <div style={{ height:'100%', width:`${repaidPct}%`, background:C_.success, borderRadius:R.pill }}/>
+                  </div>
                 </div>
-                <div style={{ marginTop:'12px', display:'flex', gap:'8px', flexWrap:'wrap', fontSize:'12px', color:C.slate }}>
-                  <span>Received: {fmtDate(f.date_received)}</span>
-                  {f.repayment_date && <span style={{ color:(f.days_overdue??0)>0?C.red:C.slate }}>Due: {fmtDate(f.repayment_date)}{(f.days_overdue??0)>0?` (${f.days_overdue}d overdue)`:f.days_remaining!==null&&f.days_remaining!==undefined?` (${f.days_remaining}d left)`:''}</span>}
-                  {f.interest_type !== 'None' && <span>Rate: {f.interest_rate}% {f.interest_type} → {fmtCur(calcMonthlyInterest(f))}/mo</span>}
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:space[2], marginBottom:space[3] }}>
+                  <div style={{ padding:space[3], background: outstanding>0 ? C_.dangerBg : C_.successBg, borderRadius:R.md }}>
+                    <div style={{ fontSize:'9px', color: outstanding>0 ? C_.danger : C_.success, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'3px' }}>Outstanding</div>
+                    <div style={{ fontSize:'16px', fontWeight:800, color: outstanding>0 ? C_.danger : C_.success }}>{fmtCur(outstanding)}</div>
+                  </div>
+                  <div style={{ padding:space[3], background:C_.warningBg, borderRadius:R.md }}>
+                    <div style={{ fontSize:'9px', color:C_.warning, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'3px' }}>Interest</div>
+                    <div style={{ fontSize:'16px', fontWeight:800, color:C_.warning }}>{fmtCur(interest)}</div>
+                  </div>
                 </div>
-                {f.notes && <div style={{ marginTop:'10px', fontSize:'12px', color:C.slate, padding:'10px', background:C.mist, borderRadius:'10px' }}>{f.notes}</div>}
+                <div style={{ display:'flex', gap:space[3], flexWrap:'wrap', fontSize:'12px', color:C.slate }}>
+                  <span>📅 {fmtDate(f.date_received)}</span>
+                  {f.repayment_date && <span style={{ color: isOD ? C_.danger : C.slate }}>⏰ Due: {fmtDate(f.repayment_date)}{isOD ? ` (${f.days_overdue}d late)` : f.days_remaining != null ? ` (${f.days_remaining}d left)` : ''}</span>}
+                  {f.interest_type !== 'None' && <span>📈 {f.interest_rate}% {f.interest_type}</span>}
+                </div>
+                {f.notes && <div style={{ marginTop:space[2], fontSize:'12px', color:C.slate, padding:space[2], background:C.mist, borderRadius:R.md }}>{f.notes}</div>}
               </div>
-              <div style={{ padding:'12px 16px', display:'flex', gap:'8px', flexWrap:'wrap' }}>
-                <button style={btnP} onClick={() => { setSelectedFunding(f); setForm({ principal:0, interest:0 }); setSheet('repay') }}>Record Repayment</button>
+              <div style={{ padding:`${space[2]} ${space[4]} ${space[3]}`, display:'flex', gap:space[2], borderTop:`1px solid ${C_.divider}` }}>
+                <button style={{ ...btnP, flex:1 }} onClick={() => { setSelectedFunding(f); setForm({ principal:0, interest:0 }); setSheet('repay') }}>Record Repayment</button>
                 <button style={btnG} onClick={() => { setForm({ ...f, date_received:f.date_received, repayment_date:f.repayment_date??'' }); setEditId(f.id); setSheet('funding') }}>Edit</button>
                 <button style={btnD} onClick={() => { if(confirm('Delete?')) fin.deleteFunding(f.id) }}>Delete</button>
               </div>
@@ -300,55 +348,70 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
         <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'14px' }}>
           <button style={btnP} onClick={() => { setForm({ bill_date:today(), retention_pct:0, gst_amount:0, status:'Draft' }); setEditId(null); setBillPhotoFile(null); setBillPhotoPreview(null); setSheet('receivable') }}>＋ Add Bill</button>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'16px' }}>
-          <SumCard label="Total Outstanding" value={fmtCur(s.outstandingReceivables)}/>
-          <SumCard label="Overdue" value={fmtCur(s.overdueReceivables)} alert={s.overdueReceivables > 0}/>
-          <SumCard label="Expected (30d)" value={fmtCur(s.expectedInflowThirtyDays)}/>
-          <SumCard label="Bills Count" value={String(fin.receivables.filter(r=>r.status!=='Paid').length)}/>
-        </div>
+        <StatGrid tiles={[
+          {label:'Outstanding',    value:fmtCur(s.outstandingReceivables), alert:s.overdueReceivables>0},
+          {label:'Overdue',        value:fmtCur(s.overdueReceivables), alert:s.overdueReceivables>0},
+          {label:'Expected (30d)', value:fmtCur(s.expectedInflowThirtyDays), accent:C_.success},
+          {label:'Open Bills',     value:String(fin.receivables.filter(r=>r.status!=='Paid').length)},
+        ]}/>
         {!fin.receivables.length && <div style={{ textAlign:'center', padding:'40px', color:C.slate }}>No receivables yet.</div>}
-        {fin.receivables.map(r => (
-          <div key={r.id} style={{ ...card, marginBottom:'14px' }}>
-            <div style={{ padding:'14px 16px' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'10px' }}>
-                <div><div style={{ fontSize:'15px', fontWeight:700 }}>{r.client_name}</div><div style={{ fontSize:'12px', color:C.slate }}>Bill {r.bill_number} · {(r as any).project?.name || '—'}</div></div>
+        {fin.receivables.map(r => {
+          const collectedPct = r.bill_amount > 0 ? Math.round((r.amount_received/r.bill_amount)*100) : 0
+          const isOD = (r.delay_days ?? 0) > 0
+          return (
+          <div key={r.id} style={{ ...card, marginBottom:space[3], border: isOD ? `1px solid ${C_.danger}` : `1px solid ${C_.border}` }}>
+            {isOD && <div style={{ height:'3px', background:C_.danger }}/>}
+            <div style={{ padding:`${space[3]} ${space[4]}` }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:space[3] }}>
+                <div style={{ flex:1, minWidth:0, marginRight:space[2] }}>
+                  <div style={{ fontSize:'16px', fontWeight:700, color:C.ink, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.client_name}</div>
+                  <div style={{ fontSize:'12px', color:C.slate, marginTop:'2px' }}>Bill {r.bill_number}{(r as any).project?.name ? ` · ${(r as any).project.name}` : ''}</div>
+                </div>
                 <StatusBadge status={r.status}/>
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'8px', margin:'10px 0' }}>
-                <div style={{ textAlign:'center', padding:'10px', background:C.mist, borderRadius:'10px' }}><div style={{ fontSize:'9px', color:C.slate, fontWeight:700, textTransform:'uppercase' }}>Bill</div><div style={{ fontSize:'14px', fontWeight:800, color:C.navy, marginTop:'3px' }}>{fmtCur(r.bill_amount)}</div></div>
-                <div style={{ textAlign:'center', padding:'10px', background:C.greenBg, borderRadius:'10px' }}><div style={{ fontSize:'9px', color:C.green, fontWeight:700, textTransform:'uppercase' }}>Received</div><div style={{ fontSize:'14px', fontWeight:800, color:C.green, marginTop:'3px' }}>{fmtCur(r.amount_received)}</div></div>
-                <div style={{ textAlign:'center', padding:'10px', background:(r.balance??0)>0?C.redBg:C.greenBg, borderRadius:'10px' }}><div style={{ fontSize:'9px', color:(r.balance??0)>0?C.red:C.green, fontWeight:700, textTransform:'uppercase' }}>Balance</div><div style={{ fontSize:'14px', fontWeight:800, color:(r.balance??0)>0?C.red:C.green, marginTop:'3px' }}>{fmtCur(r.balance)}</div></div>
+              {/* Collection progress */}
+              <div style={{ marginBottom:space[3] }}>
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:space[1] }}>
+                  <span style={{ fontSize:'12px', color:C.slate }}>Collected: {fmtCur(r.amount_received)} of {fmtCur(r.bill_amount)}</span>
+                  <span style={{ fontSize:'12px', fontWeight:700, color:C_.success }}>{collectedPct}%</span>
+                </div>
+                <div style={{ height:'4px', background:C_.bgMuted, borderRadius:R.pill, overflow:'hidden' }}>
+                  <div style={{ height:'100%', width:`${collectedPct}%`, background:C_.success, borderRadius:R.pill }}/>
+                </div>
               </div>
-              <div style={{ fontSize:'12px', color:C.slate, display:'flex', gap:'12px', flexWrap:'wrap' }}>
-                <span>Bill: {fmtDate(r.bill_date)}</span>
-                {r.submitted_date && <span>Submitted: {fmtDate(r.submitted_date)}</span>}
-                {r.expected_date && <span style={{ color:(r.delay_days??0)>0?C.red:C.slate }}>Expected: {fmtDate(r.expected_date)}{(r.delay_days??0)>0?` (${r.delay_days}d late)`:''}</span>}
-                {r.retention_pct > 0 && <span>Retention: {r.retention_pct}%</span>}
-                {r.gst_amount > 0 && <span>GST: {fmtCur(r.gst_amount)}</span>}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:space[2], marginBottom:space[3] }}>
+                <div style={{ padding:space[3], background:C_.bgMuted, borderRadius:R.md }}>
+                  <div style={{ fontSize:'9px', color:C.slate, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'3px' }}>Bill Amount</div>
+                  <div style={{ fontSize:'16px', fontWeight:800, color:C.navy }}>{fmtCur(r.bill_amount)}</div>
+                </div>
+                <div style={{ padding:space[3], background:(r.balance??0)>0 ? C_.dangerBg : C_.successBg, borderRadius:R.md }}>
+                  <div style={{ fontSize:'9px', color:(r.balance??0)>0?C_.danger:C_.success, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'3px' }}>Balance</div>
+                  <div style={{ fontSize:'16px', fontWeight:800, color:(r.balance??0)>0?C_.danger:C_.success }}>{fmtCur(r.balance)}</div>
+                </div>
               </div>
-              {r.remarks && <div style={{ marginTop:'10px', fontSize:'12px', color:C.slate }}>{r.remarks}</div>}
+              <div style={{ display:'flex', gap:space[3], flexWrap:'wrap', fontSize:'12px', color:C.slate }}>
+                <span>📅 Bill: {fmtDate(r.bill_date)}</span>
+                {r.expected_date && <span style={{ color:isOD?C_.danger:C.slate }}>⏰ Expected: {fmtDate(r.expected_date)}{isOD?` (${r.delay_days}d late)`:''}</span>}
+                {r.retention_pct > 0 && <span>📌 Retention: {r.retention_pct}%</span>}
+              </div>
+              {r.remarks && <div style={{ marginTop:space[2], fontSize:'12px', color:C.slate }}>{r.remarks}</div>}
               {(r as any).bill_photo_path && (
-                <div style={{ marginTop:'12px', position:'relative' }}>
-                  <img
-                    src={`https://yvllrkopqcmiynofayif.supabase.co/storage/v1/object/public/photos/${(r as any).bill_photo_path}`}
-                    alt="Bill scan"
-                    style={{ width:'100%', maxHeight:'180px', objectFit:'cover', borderRadius:'12px', cursor:'pointer', border:`1px solid ${C.border}` }}
-                    onClick={() => window.open(`https://yvllrkopqcmiynofayif.supabase.co/storage/v1/object/public/photos/${(r as any).bill_photo_path}`, '_blank')}
-                  />
-                  <div style={{ fontSize:'11px', color:C.slate, marginTop:'5px', display:'flex', alignItems:'center', gap:'8px' }}>
-                    📎 Bill scan attached
-                    <button onClick={() => { if(confirm('Remove this bill scan?')) fin.removeBillPhoto(r.id) }} style={{ background:'none', border:'none', color:C.red, fontSize:'11px', cursor:'pointer', textDecoration:'underline', padding:0 }}>Remove</button>
-                  </div>
+                <div style={{ marginTop:space[3] }}>
+                  <img src={`https://yvllrkopqcmiynofayif.supabase.co/storage/v1/object/public/photos/${(r as any).bill_photo_path}`} alt="Bill scan"
+                    style={{ width:'100%', maxHeight:'160px', objectFit:'cover', borderRadius:R.lg, cursor:'pointer', border:`1px solid ${C.border}` }}
+                    onClick={() => window.open(`https://yvllrkopqcmiynofayif.supabase.co/storage/v1/object/public/photos/${(r as any).bill_photo_path}`, '_blank')}/>
+                  <button onClick={() => { if(confirm('Remove bill scan?')) fin.removeBillPhoto(r.id) }} style={{ background:'none', border:'none', color:C_.danger, fontSize:'11px', cursor:'pointer', padding:`${space[1]} 0`, textDecoration:'underline' }}>📎 Remove scan</button>
                 </div>
               )}
             </div>
-            <div style={{ padding:'12px 16px', display:'flex', gap:'8px', flexWrap:'wrap', borderTop:`1px solid ${C.border}` }}>
-              {r.status !== 'Paid' && <button style={btnP} onClick={() => { setSelectedReceivable(r); setForm({ amount:r.balance, payment_date:today() }); setSheet('recv-pay') }}>Record Payment</button>}
+            <div style={{ padding:`${space[2]} ${space[4]} ${space[3]}`, display:'flex', gap:space[2], flexWrap:'wrap', borderTop:`1px solid ${C_.divider}` }}>
+              {r.status !== 'Paid' && <button style={{ ...btnP, flex:1 }} onClick={() => { setSelectedReceivable(r); setForm({ amount:r.balance, payment_date:today() }); setSheet('recv-pay') }}>Record Payment</button>}
               <button style={btnG} onClick={() => { setForm({ ...r, bill_date:r.bill_date, submitted_date:r.submitted_date??'', expected_date:r.expected_date??'', project_id:r.project_id }); setEditId(r.id); setBillPhotoFile(null); setBillPhotoPreview(null); setSheet('receivable') }}>Edit</button>
               <button style={btnD} onClick={() => { if(confirm('Delete?')) fin.deleteReceivable(r.id) }}>Delete</button>
             </div>
           </div>
-        ))}
+          )
+        })}
 
         {sheet === 'receivable' && (
           <Sheet title={editId ? 'Edit Bill' : 'Add Running Bill'} onClose={() => setSheet(null)}
@@ -412,39 +475,61 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
         <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'14px' }}>
           <button style={btnP} onClick={() => { setForm({ invoice_date:today(), status:'Pending' }); setEditId(null); setSheet('payable') }}>＋ Add Payable</button>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'16px' }}>
-          <SumCard label="Total Payable" value={fmtCur(s.outstandingPayables)}/>
-          <SumCard label="Overdue" value={fmtCur(s.overduePayables)} alert={s.overduePayables > 0}/>
-          <SumCard label="Due This Week" value={fmtCur(fin.payables.filter(p=>{const d=p.due_date&&new Date(p.due_date);const w=new Date();w.setDate(w.getDate()+7);return d&&d<=w&&p.status!=='Paid';}).reduce((s,p)=>s+(p.outstanding??0),0))}/>
-          <SumCard label="Vendors" value={String(new Set(fin.payables.filter(p=>p.status!=='Paid').map(p=>p.supplier_name)).size)}/>
-        </div>
+        <StatGrid tiles={[
+          {label:'Total Payable',  value:fmtCur(s.outstandingPayables), alert:s.overduePayables>0},
+          {label:'Overdue',        value:fmtCur(s.overduePayables), alert:s.overduePayables>0},
+          {label:'Due This Week',  value:fmtCur(fin.payables.filter(p=>{const d=p.due_date&&new Date(p.due_date);const w=new Date();w.setDate(w.getDate()+7);return d&&d<=w&&p.status!=='Paid';}).reduce((s,p)=>s+(p.outstanding??0),0)), accent:C_.warning},
+          {label:'Vendors',        value:String(new Set(fin.payables.filter(p=>p.status!=='Paid').map(p=>p.supplier_name)).size)},
+        ]}/>
         {!fin.payables.length && <div style={{ textAlign:'center', padding:'40px', color:C.slate }}>No payables yet.</div>}
-        {fin.payables.map(p => (
-          <div key={p.id} style={{ ...card, marginBottom:'14px' }}>
-            <div style={{ padding:'14px 16px' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'10px' }}>
-                <div><div style={{ fontSize:'15px', fontWeight:700 }}>{p.supplier_name}</div><div style={{ fontSize:'12px', color:C.slate }}>{p.invoice_number ? `Inv: ${p.invoice_number}` : '—'} · {(p as any).project?.name || 'No project'}</div></div>
+        {fin.payables.map(p => {
+          const paidPct = p.amount > 0 ? Math.round((p.amount_paid/p.amount)*100) : 0
+          const isOD = (p.days_overdue ?? 0) > 0
+          return (
+          <div key={p.id} style={{ ...card, marginBottom:space[3], border: isOD ? `1px solid ${C_.danger}` : `1px solid ${C_.border}` }}>
+            {isOD && <div style={{ height:'3px', background:C_.danger }}/>}
+            <div style={{ padding:`${space[3]} ${space[4]}` }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:space[3] }}>
+                <div style={{ flex:1, minWidth:0, marginRight:space[2] }}>
+                  <div style={{ fontSize:'16px', fontWeight:700, color:C.ink, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.supplier_name}</div>
+                  <div style={{ fontSize:'12px', color:C.slate, marginTop:'2px' }}>{p.invoice_number ? `Inv: ${p.invoice_number}` : '—'}{(p as any).project?.name ? ` · ${(p as any).project.name}` : ''}</div>
+                </div>
                 <StatusBadge status={p.status}/>
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'8px', margin:'10px 0' }}>
-                <div style={{ textAlign:'center', padding:'10px', background:C.mist, borderRadius:'10px' }}><div style={{ fontSize:'9px', color:C.slate, fontWeight:700, textTransform:'uppercase' }}>Invoice</div><div style={{ fontSize:'14px', fontWeight:800, color:C.navy, marginTop:'3px' }}>{fmtCur(p.amount)}</div></div>
-                <div style={{ textAlign:'center', padding:'10px', background:C.greenBg, borderRadius:'10px' }}><div style={{ fontSize:'9px', color:C.green, fontWeight:700, textTransform:'uppercase' }}>Paid</div><div style={{ fontSize:'14px', fontWeight:800, color:C.green, marginTop:'3px' }}>{fmtCur(p.amount_paid)}</div></div>
-                <div style={{ textAlign:'center', padding:'10px', background:(p.outstanding??0)>0?C.redBg:C.greenBg, borderRadius:'10px' }}><div style={{ fontSize:'9px', color:(p.outstanding??0)>0?C.red:C.green, fontWeight:700, textTransform:'uppercase' }}>Outstanding</div><div style={{ fontSize:'14px', fontWeight:800, color:(p.outstanding??0)>0?C.red:C.green, marginTop:'3px' }}>{fmtCur(p.outstanding)}</div></div>
+              <div style={{ marginBottom:space[3] }}>
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:space[1] }}>
+                  <span style={{ fontSize:'12px', color:C.slate }}>Paid: {fmtCur(p.amount_paid)} of {fmtCur(p.amount)}</span>
+                  <span style={{ fontSize:'12px', fontWeight:700, color:C_.success }}>{paidPct}%</span>
+                </div>
+                <div style={{ height:'4px', background:C_.bgMuted, borderRadius:R.pill, overflow:'hidden' }}>
+                  <div style={{ height:'100%', width:`${paidPct}%`, background:C_.success, borderRadius:R.pill }}/>
+                </div>
               </div>
-              <div style={{ fontSize:'12px', color:C.slate, display:'flex', gap:'12px', flexWrap:'wrap' }}>
-                <span>Invoice: {fmtDate(p.invoice_date)}</span>
-                {p.due_date && <span style={{ color:(p.days_overdue??0)>0?C.red:C.slate }}>Due: {fmtDate(p.due_date)}{(p.days_overdue??0)>0?` (${p.days_overdue}d overdue)`:''}</span>}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:space[2], marginBottom:space[3] }}>
+                <div style={{ padding:space[3], background:C_.bgMuted, borderRadius:R.md }}>
+                  <div style={{ fontSize:'9px', color:C.slate, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'3px' }}>Invoice</div>
+                  <div style={{ fontSize:'16px', fontWeight:800, color:C.navy }}>{fmtCur(p.amount)}</div>
+                </div>
+                <div style={{ padding:space[3], background:(p.outstanding??0)>0 ? C_.dangerBg : C_.successBg, borderRadius:R.md }}>
+                  <div style={{ fontSize:'9px', color:(p.outstanding??0)>0?C_.danger:C_.success, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:'3px' }}>Outstanding</div>
+                  <div style={{ fontSize:'16px', fontWeight:800, color:(p.outstanding??0)>0?C_.danger:C_.success }}>{fmtCur(p.outstanding)}</div>
+                </div>
+              </div>
+              <div style={{ display:'flex', gap:space[3], flexWrap:'wrap', fontSize:'12px', color:C.slate }}>
+                <span>📅 Invoice: {fmtDate(p.invoice_date)}</span>
+                {p.due_date && <span style={{ color:isOD?C_.danger:C.slate }}>⏰ Due: {fmtDate(p.due_date)}{isOD?` (${p.days_overdue}d late)`:''}</span>}
                 {p.po_number && <span>PO: {p.po_number}</span>}
               </div>
-              {p.remarks && <div style={{ marginTop:'10px', fontSize:'12px', color:C.slate }}>{p.remarks}</div>}
+              {p.remarks && <div style={{ marginTop:space[2], fontSize:'12px', color:C.slate }}>{p.remarks}</div>}
             </div>
-            <div style={{ padding:'12px 16px', display:'flex', gap:'8px', flexWrap:'wrap', borderTop:`1px solid ${C.border}` }}>
-              {p.status !== 'Paid' && <button style={btnP} onClick={() => { setSelectedPayable(p); setForm({ amount:p.outstanding, payment_date:today() }); setSheet('pay-pay') }}>Record Payment</button>}
+            <div style={{ padding:`${space[2]} ${space[4]} ${space[3]}`, display:'flex', gap:space[2], flexWrap:'wrap', borderTop:`1px solid ${C_.divider}` }}>
+              {p.status !== 'Paid' && <button style={{ ...btnP, flex:1 }} onClick={() => { setSelectedPayable(p); setForm({ amount:p.outstanding, payment_date:today() }); setSheet('pay-pay') }}>Record Payment</button>}
               <button style={btnG} onClick={() => { setForm({ ...p, invoice_date:p.invoice_date, due_date:p.due_date??'' }); setEditId(p.id); setSheet('payable') }}>Edit</button>
               <button style={btnD} onClick={() => { if(confirm('Delete?')) fin.deletePayable(p.id) }}>Delete</button>
             </div>
           </div>
-        ))}
+          )
+        })}
 
         {sheet === 'payable' && (
           <Sheet title={editId ? 'Edit Payable' : 'Add Vendor Payable'} onClose={() => setSheet(null)}
@@ -537,28 +622,28 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
         <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'14px' }}>
           <button style={btnP} onClick={() => { setForm({ account_type:'Current', opening_balance:0, current_balance:0 }); setEditId(null); setSheet('bank') }}>＋ Add Account</button>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'16px' }}>
-          <SumCard label="Total Balance" value={fmtCur(s.totalBankBalance)}/>
-          <SumCard label="Accounts" value={String(fin.accounts.length)}/>
-        </div>
+        <StatGrid tiles={[
+          {label:'Total Balance', value:fmtCur(s.totalBankBalance), accent:s.totalBankBalance>=0?C_.success:C_.danger},
+          {label:'Accounts',      value:String(fin.accounts.length)},
+        ]}/>
         {!fin.accounts.length && <div style={{ textAlign:'center', padding:'40px', color:C.slate }}>No bank accounts added yet.</div>}
         {fin.accounts.map(a => (
-          <div key={a.id} style={{ ...card, marginBottom:'14px' }}>
-            <div style={{ padding:'16px' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+          <div key={a.id} style={{ ...card, marginBottom:space[3] }}>
+            <div style={{ padding:`${space[3]} ${space[4]}` }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:space[2] }}>
                 <div>
-                  <div style={{ fontSize:'16px', fontWeight:700 }}>{a.name}</div>
+                  <div style={{ fontSize:'16px', fontWeight:700, color:C.ink }}>{a.name}</div>
                   <div style={{ fontSize:'12px', color:C.slate, marginTop:'2px' }}>{a.bank_name} · {a.account_type}</div>
-                  {a.account_number && <div style={{ fontSize:'12px', color:C.slate }}>A/C: ••••{a.account_number.slice(-4)}</div>}
+                  {a.account_number && <div style={{ fontSize:'12px', color:C.slate }}>••••{a.account_number.slice(-4)}</div>}
                 </div>
                 <div style={{ textAlign:'right' }}>
-                  <div style={{ fontSize:'21px', fontWeight:800, color: a.current_balance >= 0 ? C.navy : C.red }}>{fmtCur(a.current_balance)}</div>
-                  <div style={{ fontSize:'11px', color:C.slate }}>Opening: {fmtCur(a.opening_balance)}</div>
+                  <div style={{ fontSize:'22px', fontWeight:800, letterSpacing:'-0.02em', color: a.current_balance >= 0 ? C.navy : C_.danger }}>{fmtCur(a.current_balance)}</div>
+                  <div style={{ fontSize:'11px', color:C.slate, marginTop:'2px' }}>Opening: {fmtCur(a.opening_balance)}</div>
                 </div>
               </div>
-              {a.notes && <div style={{ marginTop:'10px', fontSize:'12px', color:C.slate }}>{a.notes}</div>}
+              {a.notes && <div style={{ fontSize:'12px', color:C.slate, padding:space[2], background:C.mist, borderRadius:R.md }}>{a.notes}</div>}
             </div>
-            <div style={{ padding:'12px 16px', display:'flex', gap:'8px', borderTop:`1px solid ${C.border}` }}>
+            <div style={{ padding:`${space[2]} ${space[4]} ${space[3]}`, display:'flex', gap:space[2], borderTop:`1px solid ${C_.divider}` }}>
               <button style={btnG} onClick={() => { setForm({ ...a }); setEditId(a.id); setSheet('bank') }}>Edit</button>
               <button style={btnD} onClick={() => { if(confirm('Delete?')) fin.deleteAccount(a.id) }}>Delete</button>
             </div>
@@ -593,11 +678,11 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
           <div style={{ display:'flex', gap:'8px', marginBottom:'16px' }}>
             {[7,30,90].map(d => <button key={d} onClick={() => setForecastDays(d)} style={{ ...(forecastDays===d?btnP:btnG) }}>{d} Days</button>)}
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'10px', marginBottom:'16px' }}>
-            <SumCard label="Expected In" value={fmtCur(totalIn)}/>
-            <SumCard label="Expected Out" value={fmtCur(totalOut)}/>
-            <SumCard label="Net" value={fmtCur(totalIn-totalOut)} alert={(totalIn-totalOut)<0}/>
-          </div>
+          <StatGrid tiles={[
+            {label:'Expected In',  value:fmtCur(totalIn),  accent:C_.success},
+            {label:'Expected Out', value:fmtCur(totalOut), alert:true},
+            {label:'Net',          value:fmtCur(totalIn-totalOut), alert:(totalIn-totalOut)<0, accent:(totalIn-totalOut)>=0?C_.success:undefined},
+          ]}/>
           {!forecast.filter(d=>d.items.length>0).length
             ? <div style={{ textAlign:'center', padding:'40px', color:C.slate }}>No scheduled events in the next {forecastDays} days.<br/>Add receivables, payables, and funding with due dates to see the forecast.</div>
             : forecast.filter(d => d.items.length > 0).map((day, i) => (
@@ -705,14 +790,13 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
       const CRED_CATS = ['General','Government Portal','Client Portal','Vendor Portal','Banking','Email','Other']
 
       const loadCreds = async () => {
-        const { data } = await (await import('../lib/supabase')).supabase.from('vault_credentials').select('*').order('category').order('name')
+        const { data } = supabase.from('vault_credentials').select('*').order('category').order('name')
         if (data) setCredentials(data)
       }
       if (credentials.length === 0) { loadCreds() }
 
       const saveCred = async () => {
-        const { supabase } = await import('../lib/supabase')
-        if (editId) {
+                if (editId) {
           const { error } = await supabase.from('vault_credentials').update(form).eq('id', editId)
           if (error) { alert('Error: ' + error.message); return }
         } else {
@@ -724,8 +808,7 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
       }
 
       const deleteCred = async (id: string) => {
-        const { supabase } = await import('../lib/supabase')
-        if (!confirm('Delete this credential?')) return
+                if (!confirm('Delete this credential?')) return
         await supabase.from('vault_credentials').delete().eq('id', id)
         loadCreds()
       }
@@ -828,25 +911,43 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
   // ── MAIN RENDER ──────────────────────────────────────────────
   return (
     <div style={{ fontFamily:"'Inter',system-ui,sans-serif", fontSize:'15px', color:C.ink, paddingBottom:'80px' }}>
-      {/* Header */}
-      <div style={{ padding:'16px 16px 0' }}>
-        <div style={{ fontSize:'26px', fontWeight:800, color:C.navy, letterSpacing:'-0.025em', lineHeight:1.2 }}>Director's Vault</div>
-        <div style={goldRule}/>
-        <div style={{ fontSize:'12px', color:C.slate, marginTop:'5px' }}>Financial controls &amp; secure credentials · {new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}</div>
-      </div>
-
-      {/* Module tabs */}
-      <div data-no-swipe="true" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', display:'flex', padding:'14px 16px 0', borderBottom:`1px solid ${C.border}`, marginBottom:'16px', position:'sticky', top:0, zIndex:20, background:'#fff' }}>
-        {MODULES.map(m => (
-          <button key={m.key} onClick={() => setMod(m.key)}
-            style={{ padding:'8px 12px', fontSize:'13px', fontWeight:mod===m.key?700:500, color:mod===m.key?C.navy:C.slate, border:'none', background:'none', borderBottom:`2px solid ${mod===m.key?C.navy:'transparent'}`, whiteSpace:'nowrap', cursor:'pointer', fontFamily:'inherit', marginBottom:'-1px', transition:'color .15s', display:'flex', alignItems:'center', gap:'6px' }}>
-            <span>{m.icon}</span>{m.label}
-          </button>
-        ))}
+      {/* Navy Hero Header */}
+      <div style={{ background: C.navy, padding:`${space[4]} ${space[4]} 0` }}>
+        <div style={{ fontSize:'11px', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'rgba(255,255,255,.4)', marginBottom:space[1] }}>
+          Director's Vault
+        </div>
+        <div style={{ fontSize:'28px', fontWeight:800, color:'#fff', letterSpacing:'-0.025em', lineHeight:1.1, marginBottom:'3px' }}>
+          {fmtCur(s.cashPosition)}
+        </div>
+        <div style={{ fontSize:'12px', color:'rgba(255,255,255,.45)', marginBottom:space[4] }}>
+          Cash position · {fin.accounts.length} account{fin.accounts.length===1?'':'s'} · {new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short'})}
+        </div>
+        {/* 30-day strip */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:space[2], marginBottom:space[4] }}>
+          {[
+            ['30-Day In',  fmtCur(s.expectedInflowThirtyDays),  '#34d399'],
+            ['30-Day Out', fmtCur(s.expectedOutflowThirtyDays), '#f87171'],
+            ['Net',        fmtCur(s.netCashProjection),          s.netCashProjection >= 0 ? '#34d399' : '#f87171'],
+          ].map(([lbl,val,col]) => (
+            <div key={lbl as string} style={{ background:'rgba(255,255,255,.07)', borderRadius:R.md, padding:space[3] }}>
+              <div style={{ fontSize:'9px', fontWeight:700, color:'rgba(255,255,255,.45)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'3px' }}>{lbl}</div>
+              <div style={{ fontSize:'15px', fontWeight:800, color: col as string }}>{val}</div>
+            </div>
+          ))}
+        </div>
+        {/* Module tabs inside hero */}
+        <div data-no-swipe="true" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch', display:'flex', marginBottom:'-1px' }}>
+          {MODULES.map(m => (
+            <button key={m.key} onClick={() => setMod(m.key)}
+              style={{ padding:`${space[2]} ${space[3]}`, fontSize:'12px', fontWeight:mod===m.key?700:500, color:mod===m.key?'#fff':'rgba(255,255,255,.4)', border:'none', background:'transparent', borderBottom:`2px solid ${mod===m.key?'#fff':'transparent'}`, whiteSpace:'nowrap', cursor:'pointer', fontFamily:'inherit', marginBottom:'-1px', transition:'color .15s' }}>
+              {m.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Module content */}
-      <div style={{ padding:'0 16px' }}>
+      <div style={{ padding:`${space[4]} ${space[4]} 0` }}>
         {renderModule()}
       </div>
     </div>
