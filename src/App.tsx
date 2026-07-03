@@ -496,7 +496,7 @@ function App() {
   if (loading) return (
     <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#ffffff', fontFamily:"'Inter',system-ui,sans-serif" }}>
       <div style={{ textAlign:'center' }}>
-        <img src={LOGO_NAVY} alt="Ease Builders" style={{ height:'72px', width:'auto', display:'block', margin:'0 auto' }}/>
+        <img src={LOGO_NAVY} alt="Ease Builders" style={{ height:'72px', width:'auto', display:'block', margin:'0 auto', mixBlendMode:'multiply' }}/>
       </div>
     </div>
   )
