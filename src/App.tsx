@@ -28,6 +28,8 @@ const isOverdue = isOD
 const daysLeft  = dLeft
 function fmtAgo(ts: string) { return smartDate(ts, 'ago') }
 function projectHealth(p: Project) { return calcHealth(p) }
+const PROJ_TYPES = ['MOT (Modular OT)','MGPS','HVAC','Civil','Electrical','Plumbing','Combined','Renovation']
+const STAGES     = ['Tender','Planning','Procurement','Site Prep','Foundation','Civil Works','MGPS','HVAC','Electrical','Plumbing','Finishing','Testing','Commissioning','Handover']
 const EXP_CATS = ['Materials','Labour','Equipment','Transport','Professional Fees','Subcontract','GST','Misc']
 
 // ── Design system aliases (consumed from ./design/tokens) ──────
@@ -446,7 +448,7 @@ function InnerApp() {
       <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} style={{ flex:1, overflowY:'auto', overflowX:'hidden', WebkitOverflowScrolling:'touch' as any }}>
         {view === 'home'    && <HomeView/>}
         {view === 'projects'&& <ProjectsView/>}
-        {view === 'project' && activeProject && <ProjectView project={activeProject} tab={tab} setTab={setTab} sheet={sheet} setSheet={setSheet} role={role} user={user!}/>}
+        {view === 'project' && activeProject && <ProjectView project={activeProject} tab={tab} setTab={setTab} sheet={sheet} setSheet={setSheet} role={role} user={user!.profile}/>}
         {view === 'logs'    && <LogsView/>}
         {view === 'finance' && <DirectorOffice currentUser={user!.profile} projects={projects}/>}
         {view === 'more'    && <MoreView/>}

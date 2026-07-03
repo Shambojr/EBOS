@@ -72,7 +72,7 @@ interface ProjectViewProps {
 // MAIN COMPONENT
 // ════════════════════════════════════════════════════════════
 export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user }: ProjectViewProps) {
-  const pd = useProjectData(project.id, user.profile)
+  const pd = useProjectData(project.id, user)
   const allowedTabs = can(role, 'finance') ? ['overview','stages','milestones','logs','materials','expenses','boq','documents','photos'] :
     role === 'accountant' ? ['overview','expenses','documents','photos'] :
     ['overview','stages','milestones','logs','materials','expenses','boq','documents','photos']
@@ -447,7 +447,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
 
           {sheet === 'log' && (
             <Sheet title={editLog ? 'Edit Site Log' : 'Daily Site Log'} onClose={() => setSheet(null)}
-              footer={<><button onClick={() => setSheet(null)} style={{ ...btnG, flex:0 }}>Cancel</button><button onClick={() => save(() => editLog ? pd.updateLog(editLog, logForm) : pd.addLog({ ...logForm, logged_by: user.profile.id }))} style={{ ...btnP, flex:1, justifyContent:'center' }}>{editLog ? 'Save Changes' : 'Save Log'}</button></>}>
+              footer={<><button onClick={() => setSheet(null)} style={{ ...btnG, flex:0 }}>Cancel</button><button onClick={() => save(() => editLog ? pd.updateLog(editLog, logForm) : pd.addLog({ ...logForm, logged_by: user.id }))} style={{ ...btnP, flex:1, justifyContent:'center' }}>{editLog ? 'Save Changes' : 'Save Log'}</button></>}>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap: space[3] }}>
                 <FormGroup label="Date"><input style={fieldStyle} type="date" value={logForm.log_date||today()} onChange={e=>setLogForm((f:any)=>({...f,log_date:e.target.value}))}/></FormGroup>
                 <FormGroup label="Weather"><select style={{...fieldStyle,appearance:'none'}} value={logForm.weather||''} onChange={e=>setLogForm((f:any)=>({...f,weather:e.target.value}))}><option value="">—</option>{['Clear','Partly Cloudy','Cloudy','Light Rain','Heavy Rain','Hot','Windy'].map(w=><option key={w}>{w}</option>)}</select></FormGroup>
