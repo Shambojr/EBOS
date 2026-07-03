@@ -494,15 +494,9 @@ function InnerApp() {
 function App() {
   const { user, loading } = useAuth()
   if (loading) return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#1e3a4a', fontFamily:"'Inter',system-ui,sans-serif" }}>
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#ffffff', fontFamily:"'Inter',system-ui,sans-serif" }}>
       <div style={{ textAlign:'center' }}>
-        <img src={LOGO_NAVY} alt="Ease Builders" style={{ height:'48px', width:'auto', display:'block', margin:'0 auto 20px', filter:'brightness(0) invert(1)', opacity:0.9 }}/>
-        <div style={{ display:'flex', gap:'6px', justifyContent:'center' }}>
-          {[0,1,2].map(i => (
-            <div key={i} style={{ width:'6px', height:'6px', borderRadius:'50%', background:'rgba(255,255,255,.5)', animation:`ebDot 1.2s ease-in-out ${i*0.2}s infinite` }}/>
-          ))}
-        </div>
-        <style>{`@keyframes ebDot{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}`}</style>
+        <img src={LOGO_NAVY} alt="Ease Builders" style={{ height:'72px', width:'auto', display:'block', margin:'0 auto' }}/>
       </div>
     </div>
   )
