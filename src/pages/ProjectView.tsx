@@ -6,14 +6,14 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useProjectData } from '../hooks/useProjectData'
-import { can } from '../lib/rbac'
-import { colors as C_, space, radius as R, shadow, T, type as TY } from '../design/tokens'
+import { can, PROJECT_TABS } from '../lib/rbac'
+import { colors as C_, space, radius as R, T, type as TY } from '../design/tokens'
 import { fmtMoney, smartDate, daysLeft, isOverdue, projectHealth, getStatus, initials } from '../design/business'
 import {
   toast, Sheet, FormGroup, RangeField, EmptyState, Badge, ProgressBar,
   BusinessEmptyState, EnterpriseList, HeroCard, StatGrid, KPITile,
 } from '../design/components'
-import type { Project, User, UserRole } from '../types'
+import type { Project, User, UserRole, Milestone } from '../types'
 
 // ── Constants ─────────────────────────────────────────────────
 const STAGES       = ['Tender','Planning','Procurement','Site Prep','Foundation','Civil Works','MGPS','HVAC','Electrical','Plumbing','Finishing','Testing','Commissioning','Handover']
@@ -73,9 +73,7 @@ interface ProjectViewProps {
 // ════════════════════════════════════════════════════════════
 export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user }: ProjectViewProps) {
   const pd = useProjectData(project.id, user)
-  const allowedTabs = can(role, 'finance') ? ['overview','stages','milestones','logs','materials','expenses','boq','documents','photos'] :
-    role === 'accountant' ? ['overview','expenses','documents','photos'] :
-    ['overview','stages','milestones','logs','materials','expenses','boq','documents','photos']
+  const allowedTabs = PROJECT_TABS[role]
 
   const totalSpent = pd.expenses.reduce((s, e) => s + (e.amount ?? 0), 0)
   const budget     = project.budget ?? 0
@@ -296,13 +294,13 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
             const upcoming  = pd.milestones.filter(m => !m.done && !isOverdue(m.due_date))
             const completed = pd.milestones.filter(m => m.done)
 
-            const MilestoneRow = ({ m }: { m: typeof pd.milestones[0] }) => {
+            const MilestoneRow = ({ m, onEdit, onDelete, onToggle }: { m: Milestone & { assignee?: any }; onEdit: (m: any) => void; onDelete: (id: string) => void; onToggle: (id: string, done: boolean) => void }) => {
               const over = !m.done && isOverdue(m.due_date)
               const [pc, tc] = priorityColor[m.priority || 'Medium'] ?? priorityColor.Medium
               return (
                 <div style={{ display:'flex', gap: space[3], padding:`${space[3]} ${space[4]}`, borderBottom:`1px solid ${C.border}`, alignItems:'center' }}>
                   {/* Checkbox */}
-                  <div onClick={() => pd.toggleMilestone(m.id, !m.done)} style={{ width:'22px', height:'22px', borderRadius:'6px', border:`2px solid ${m.done ? C_.success : over ? C_.danger : C.border}`, background: m.done ? C_.success : 'transparent', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, transition:'all .15s' }}>
+                  <div onClick={() => onToggle(m.id, !m.done)} style={{ width:'22px', height:'22px', borderRadius:'6px', border:`2px solid ${m.done ? C_.success : over ? C_.danger : C.border}`, background: m.done ? C_.success : 'transparent', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, transition:'all .15s' }}>
                     {m.done && <span style={{ fontSize:'12px', fontWeight:700 }}>✓</span>}
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
@@ -314,8 +312,8 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
                     </div>
                   </div>
                   <div style={{ fontSize: TY.sizeSm, fontWeight: TY.weightBold, color: C_.info, marginRight: space[1] }}>{m.pct ?? 0}%</div>
-                  <button onClick={() => { setMsForm({ ...m, due_date: m.due_date ?? '', assignee_id: m.assignee_id ?? '', priority: m.priority, pct: m.pct, notes: m.notes ?? '' }); setEditMs(m.id); setSheet('milestone') }} style={{ ...btnG, padding:`${space[1]} ${space[2]}`, fontSize: TY.sizeSm, height:'32px' }}>Edit</button>
-                  <button onClick={() => { if(confirm('Delete?')) pd.deleteMilestone(m.id) }} style={{ ...btnD, height:'32px', padding:`0 ${space[2]}` }}>✕</button>
+                  <button onClick={() => onEdit(m)} style={{ ...btnG, padding:`${space[1]} ${space[2]}`, fontSize: TY.sizeSm, height:'32px' }}>Edit</button>
+                  <button onClick={() => onDelete(m.id)} style={{ ...btnD, height:'32px', padding:`0 ${space[2]}` }}>✕</button>
                 </div>
               )
             }
@@ -325,19 +323,19 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
                 {overdue.length > 0 && (
                   <div style={{ marginBottom: space[4] }}>
                     <div style={{ fontSize: TY.sizeXs, fontWeight: TY.weightBold, color: C_.danger, textTransform:'uppercase', letterSpacing: TY.trackingWide, marginBottom: space[2] }}>⚠ Overdue · {overdue.length}</div>
-                    <div style={{ ...card, border:`1px solid ${C_.dangerBg}` }}>{overdue.map(m => <MilestoneRow key={m.id} m={m}/>)}</div>
+                    <div style={{ ...card, border:`1px solid ${C_.dangerBg}` }}>{overdue.map(m => <MilestoneRow key={m.id} m={m} onEdit={(x)=>{ setMsForm({ ...x, due_date: x.due_date ?? '', assignee_id: x.assignee_id ?? '', priority: x.priority, pct: x.pct, notes: x.notes ?? '' }); setEditMs(x.id); setSheet('milestone') }} onDelete={(id)=>{ if(confirm('Delete?')) pd.deleteMilestone(id) }} onToggle={pd.toggleMilestone}/>)}</div>
                   </div>
                 )}
                 {upcoming.length > 0 && (
                   <div style={{ marginBottom: space[4] }}>
                     <div style={{ fontSize: TY.sizeXs, fontWeight: TY.weightBold, color: C.slate, textTransform:'uppercase', letterSpacing: TY.trackingWide, marginBottom: space[2] }}>Upcoming · {upcoming.length}</div>
-                    <div style={{ ...card }}>{upcoming.map(m => <MilestoneRow key={m.id} m={m}/>)}</div>
+                    <div style={{ ...card }}>{upcoming.map(m => <MilestoneRow key={m.id} m={m} onEdit={(x)=>{ setMsForm({ ...x, due_date: x.due_date ?? '', assignee_id: x.assignee_id ?? '', priority: x.priority, pct: x.pct, notes: x.notes ?? '' }); setEditMs(x.id); setSheet('milestone') }} onDelete={(id)=>{ if(confirm('Delete?')) pd.deleteMilestone(id) }} onToggle={pd.toggleMilestone}/>)}</div>
                   </div>
                 )}
                 {completed.length > 0 && (
                   <div>
                     <div style={{ fontSize: TY.sizeXs, fontWeight: TY.weightBold, color: C_.success, textTransform:'uppercase', letterSpacing: TY.trackingWide, marginBottom: space[2] }}>Completed · {completed.length}</div>
-                    <div style={{ ...card, opacity: 0.7 }}>{completed.map(m => <MilestoneRow key={m.id} m={m}/>)}</div>
+                    <div style={{ ...card, opacity: 0.7 }}>{completed.map(m => <MilestoneRow key={m.id} m={m} onEdit={(x)=>{ setMsForm({ ...x, due_date: x.due_date ?? '', assignee_id: x.assignee_id ?? '', priority: x.priority, pct: x.pct, notes: x.notes ?? '' }); setEditMs(x.id); setSheet('milestone') }} onDelete={(id)=>{ if(confirm('Delete?')) pd.deleteMilestone(id) }} onToggle={pd.toggleMilestone}/>)}</div>
                   </div>
                 )}
               </>
