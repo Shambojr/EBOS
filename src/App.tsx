@@ -14,8 +14,8 @@ import { supabase } from './lib/supabase'
 import { logActivity } from './lib/logger'
 import { LOGO_NAVY } from './assets/logo'
 import { colors as C_, space, radius as R, shadow, text as TT, T, type as TY, motion as MO, iconSize } from './design/tokens'
-import { fmtMoney, smartDate, daysLeft as dLeft, isOverdue as isOD, projectHealth as calcHealth, initials as bInitials, HEALTH_LABEL } from './design/business'
-import { toast, Sheet, FormGroup, RangeField, EmptyState, HealthBadge, Badge, SyncIndicator, Avatar, ProgressBar, EnterpriseCard, KPITile, StatGrid, HeroCard, ConfirmDialog, ListRow, ActivityItem, FormSection, PageHeader, ProjectHealthCard, EntityAvatar, BusinessEmptyState, EnterpriseList } from './design/components'
+import { fmtMoney, smartDate, daysLeft as dLeft, isOverdue as isOD, projectHealth as calcHealth, initials as bInitials } from './design/business'
+import { toast, Sheet, FormGroup, RangeField, EmptyState, HealthBadge, Badge, Avatar, StatGrid } from './design/components'
 import type { Project, Milestone, UserRole } from './types'
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -54,17 +54,11 @@ const fieldStyle= T.field
 const fieldLabel= T.fieldLabel
 const card      = T.card
 
-// HealthBadge, Badge, SyncIndicator imported from ./design/components
 
-// toast imported from ./design/components
 
-// Sheet imported from ./design/components
 
-// FormGroup imported from ./design/components
 
-// RangeField imported from ./design/components
 
-// EmptyState imported from ./design/components
 
 // ── Main Inner App (after auth) ────────────────────────────────
 function InnerApp() {
@@ -248,8 +242,6 @@ function InnerApp() {
       </div>
     </Sheet>
   ) : null
-
-  // ProjectView extracted to src/pages/ProjectView.tsx
 
     // ── PROJECT FORM STATE ─────────────────────────────────────
   const [projForm, setProjForm] = useState<any>({})

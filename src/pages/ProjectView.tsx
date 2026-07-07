@@ -287,7 +287,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
             <button style={btnP} onClick={() => { setMsForm({}); setEditMs(null); setSheet('milestone') }}>＋ Add</button>
           </div>
 
-          {!pd.milestones.length && <BusinessEmptyState.NoProjects onCta={() => { setMsForm({}); setEditMs(null); setSheet('milestone') }} ctaLabel="＋ Add First Milestone"/>}
+          {!pd.milestones.length && <BusinessEmptyState.NoLogs onCta={() => { setMsForm({}); setEditMs(null); setSheet('milestone') }} ctaLabel="＋ Add First Milestone"/>}
 
           {pd.milestones.length > 0 && (() => {
             const overdue   = pd.milestones.filter(m => !m.done && isOverdue(m.due_date))

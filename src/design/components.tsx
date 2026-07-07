@@ -539,9 +539,10 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
 // 2-column KPI grid. Wraps KPITile for consistent spacing.
 // Usage: <StatGrid tiles={[{label:'Budget', value:'₹10L'}, ...]}/>
 interface StatTile { label: string; value: string; sub?: string; alert?: boolean; accent?: string; onClick?: () => void }
-export function StatGrid({ tiles }: { tiles: StatTile[] }) {
+export function StatGrid({ tiles, columns }: { tiles: StatTile[]; columns?: 2 | 3 }) {
+  const cols = columns ?? (tiles.length === 3 ? 3 : 2)
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: space[2], padding: `0 ${space[4]}`, marginBottom: space[4] }}>
+    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: space[2], marginBottom: space[4] }}>
       {tiles.map(t => <KPITile key={t.label} {...t}/>)}
     </div>
   )

@@ -3,7 +3,7 @@ import { useFinance, calcInterestAccrued, calcMonthlyInterest } from '../hooks/u
 import { supabase } from '../lib/supabase'
 import { colors as C_, space, radius as R, shadow, text as TT, T, type as TY, motion as MO } from '../design/tokens'
 import { fmtMoney, smartDate, getStatus } from '../design/business'
-import { Sheet, StatusBadge, SumCard, KPITile, StatGrid, HeroCard, EnterpriseCard, ListRow, ActivityItem, ConfirmDialog, PageHeader } from '../design/components'
+import { Sheet, StatusBadge, KPITile, StatGrid } from '../design/components'
 import type { User, Project } from '../types'
 import type {
   Funding, Receivable, Payable, CashBookEntry,
@@ -43,7 +43,6 @@ function Grid2({ children }: { children:React.ReactNode }) {
 
 // StatusBadge imported from ../design/components
 
-// SumCard imported from ../design/components
 
 // ══════════════════════════════════════════════════════════════
 // MAIN DIRECTOR OFFICE COMPONENT
@@ -793,7 +792,8 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
         const { data } = await supabase.from('vault_credentials').select('*').order('category').order('name')
         if (data) setCredentials(data)
       }
-      if (credentials.length === 0) { loadCreds() }
+      // Load once on mount - credentials.length===0 check prevents re-fetch while data exists
+      // This is safe because setCredentials triggers re-render, not loadCreds again
 
       const saveCred = async () => {
                 if (editId) {
