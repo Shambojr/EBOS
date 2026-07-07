@@ -3,11 +3,13 @@ import { useState, useEffect, useRef } from 'react'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { useProjects } from './hooks/useProjects'
 import { useNotifications } from './hooks/useNotifications'
+import { useWorkspace } from './hooks/useWorkspace'
 import { useOnlineStatus } from './hooks/useOnlineStatus'
 import { LoginPage } from './pages/LoginPage'
 import { UserManagementPage } from './pages/UserManagementPage'
 import { DirectorOffice } from './pages/DirectorOffice'
 import { ProjectView } from './pages/ProjectView'
+import { WorkspacePage } from './pages/WorkspacePage'
 import { can, PROJECT_TABS, NAV_TABS } from './lib/rbac'
 import { useProjectData } from './hooks/useProjectData'
 import { supabase } from './lib/supabase'
@@ -65,8 +67,9 @@ function InnerApp() {
   const { user, signOut } = useAuth()
   const { status: syncStatus, pending } = useOnlineStatus()
   const { notifications, unreadCount, markAllRead } = useNotifications(user?.id)
+  const ws = useWorkspace(user?.profile ?? null)
   const { projects, loading: projLoading, createProject, updateProject, deleteProject } = useProjects(user?.profile ?? null)
-  const [view, setView] = useState<'home' | 'projects' | 'project' | 'logs' | 'activity' | 'more' | 'users' | 'finance'>('home')
+  const [view, setView] = useState<'home' | 'projects' | 'project' | 'workspace' | 'activity' | 'more' | 'users' | 'finance'>('home')
   const [activeProject, setActiveProject] = useState<Project | null>(null)
   const [tab, setTab] = useState('overview')
   const [sheet, setSheet] = useState<string | null>(null)
@@ -81,7 +84,7 @@ function InnerApp() {
 
   // ── SWIPE GESTURES ─────────────────────────────────────────
   const touchRef = useRef<{ x: number; y: number } | null>(null)
-  const MAIN_ORDER = ['home', 'projects', 'finance'] as const
+  const MAIN_ORDER = ['home', 'projects', 'workspace', 'finance'] as const
   const onTouchStart = (e: React.TouchEvent) => {
     const target = e.target as HTMLElement
     if (target.closest('[data-no-swipe]')) { touchRef.current = null; return }
@@ -153,6 +156,7 @@ function InnerApp() {
     home:     <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
     projects: <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
     logs:     <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
+    workspace: <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>,
     finance:  <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><path d="M6 3h12M6 8h12M6 13h6a6 6 0 0 0 0-10"/><path d="M6 21l6-8H6"/></svg>,
     activity: <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
     more:     <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>,
@@ -271,6 +275,25 @@ function InnerApp() {
             {label:'Budget',  value:fmtCur(projects.reduce((s,p)=>s+(p.budget??0),0)), accent:C.gold},
             {label:'Pending', value:'0'},
           ]}/>
+
+          {/* Workspace widgets */}
+          {(ws.myTasks.length > 0 || ws.todayReminders.length > 0) && (
+            <div style={{ padding:'0 16px', marginBottom:'16px' }}>
+              <div style={{ fontSize:'11px', fontWeight:700, color: C.slate, letterSpacing:'.1em', textTransform:'uppercase', marginBottom:'8px' }}>Today's Work</div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
+                <div onClick={() => setView('workspace')} style={{ ...card, padding:'14px', cursor:'pointer' }}>
+                  <div style={{ fontSize:'9px', fontWeight:700, color: ws.overdueTasks.length>0?C.red:C.slate, textTransform:'uppercase', letterSpacing:'.07em', marginBottom:'4px' }}>My Tasks</div>
+                  <div style={{ fontSize:'22px', fontWeight:800, color: ws.overdueTasks.length>0?C.red:C.navy }}>{ws.myTasks.length}</div>
+                  {ws.overdueTasks.length>0 && <div style={{ fontSize:'11px', color:C.red }}>⚠ {ws.overdueTasks.length} overdue</div>}
+                </div>
+                <div onClick={() => setView('workspace')} style={{ ...card, padding:'14px', cursor:'pointer' }}>
+                  <div style={{ fontSize:'9px', fontWeight:700, color: ws.todayReminders.length>0?C.amber:C.slate, textTransform:'uppercase', letterSpacing:'.07em', marginBottom:'4px' }}>Reminders</div>
+                  <div style={{ fontSize:'22px', fontWeight:800, color: ws.todayReminders.length>0?C.amber:C.navy }}>{ws.todayReminders.length}</div>
+                  {ws.overdueReminders.length>0 && <div style={{ fontSize:'11px', color:C.red }}>⚠ {ws.overdueReminders.length} overdue</div>}
+                </div>
+              </div>
+            </div>
+          )}
           <div style={{ fontSize:'11px', fontWeight:700, color: C.slate, letterSpacing:'.1em', textTransform:'uppercase', padding:'0 16px', marginBottom:'8px' }}>Project Health</div>
           <div style={{ width:'28px', height:'2.5px', background: C.gold, borderRadius:'2px', margin:'0 0 12px 16px' }}/>
           <div style={{ padding:'0 16px' }}>
@@ -366,18 +389,7 @@ function InnerApp() {
     </div>
   )
 
-  // ── LOGS GLOBAL ────────────────────────────────────────────
-  const LogsView = () => (
-    <div style={{ padding:'20px 16px', paddingBottom:'80px' }}>
-      <div style={{ fontSize:'26px', fontWeight:800, color: C.navy, letterSpacing:'-0.025em', lineHeight:1.2 }}>Site Logs</div>
-      <div style={{ fontSize:'13px', color: C.slate, marginTop:'3px', marginBottom:'24px' }}>Daily activity across all projects</div>
-      <EmptyState
-        icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>}
-        title="Navigate to a Project"
-        body="Open any project and tap the Logs tab to add or view daily site updates."
-      />
-    </div>
-  )
+  // LogsView removed — replaced by WorkspacePage
 
   // ── MORE ───────────────────────────────────────────────────
   const MoreView = () => (
@@ -439,13 +451,13 @@ function InnerApp() {
     <div style={{ ...SF, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background: C.ash, maxWidth:'540px', margin:'0 auto' }}>
       <TopBar/>
       <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} style={{ flex:1, overflowY:'auto', overflowX:'hidden', WebkitOverflowScrolling:'touch' as any }}>
-        {view === 'home'    && <HomeView/>}
-        {view === 'projects'&& <ProjectsView/>}
-        {view === 'project' && activeProject && <ProjectView project={activeProject} tab={tab} setTab={setTab} sheet={sheet} setSheet={setSheet} role={role} user={user!.profile}/>}
-        {view === 'logs'    && <LogsView/>}
-        {view === 'finance' && <DirectorOffice currentUser={user!.profile} projects={projects}/>}
-        {view === 'more'    && <MoreView/>}
-        {view === 'users'   && <><div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'12px 16px' }}><button onClick={()=>setView('more')} style={{ ...btnGhost, fontSize:'13px' }}>← Back</button></div><UserManagementPage/></>}
+        {view === 'home'      && <HomeView/>}
+        {view === 'projects'  && <ProjectsView/>}
+        {view === 'project'   && activeProject && <ProjectView project={activeProject} tab={tab} setTab={setTab} sheet={sheet} setSheet={setSheet} role={role} user={user!.profile}/>}
+        {view === 'workspace' && <WorkspacePage user={user!.profile} role={role} users={[user!.profile]}/>}
+        {view === 'finance'   && <DirectorOffice currentUser={user!.profile} projects={projects}/>}
+        {view === 'more'      && <MoreView/>}
+        {view === 'users'     && <><div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'12px 16px' }}><button onClick={()=>setView('more')} style={{ ...btnGhost, fontSize:'13px' }}>← Back</button></div><UserManagementPage/></>}
       </div>
       <BottomNav/>
       <NotifPanel/>
