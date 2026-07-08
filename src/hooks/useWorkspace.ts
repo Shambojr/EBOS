@@ -56,11 +56,16 @@ export function useWorkspace(currentUser: User | null) {
   const [tasks,     setTasks]     = useState<Task[]>([])
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [activity,  setActivity]  = useState<any[]>([])
+  const [teamUsers, setTeamUsers] = useState<any[]>([])
   const [loading,   setLoading]   = useState(true)
 
   const fetchAll = useCallback(async () => {
     if (!currentUser) return
     setLoading(true)
+
+    // Fetch team users for assignment dropdowns
+    const { data: usersData } = await supabase.from('users').select('id,full_name,role').eq('is_active', true).order('full_name')
+    if (usersData) setTeamUsers(usersData)
 
     const [t, r, a] = await Promise.all([
       supabase.from('tasks')
@@ -178,7 +183,7 @@ export function useWorkspace(currentUser: User | null) {
   const upcomingReminders = reminders.filter(r => !r.is_complete && r.due_date > today)
 
   return {
-    tasks, reminders, activity, loading,
+    tasks, reminders, activity, teamUsers, loading,
     myTasks, overdueTasks, todayReminders, overdueReminders, upcomingReminders,
     refetch: fetchAll,
     addTask, updateTask, deleteTask,
