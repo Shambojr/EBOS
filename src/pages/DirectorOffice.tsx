@@ -1,6 +1,12 @@
 import { useState } from 'react'
 import { useFinance, calcInterestAccrued, calcMonthlyInterest } from '../hooks/useFinance'
 import { supabase } from '../lib/supabase'
+import {
+  Ico, VAULT_ICON_MAP,
+  CalendarDaysIcon, ClockIcon, ArrowTrendingUpIcon, TagIcon,
+  PaperClipIcon, EyeIcon, EyeSlashIcon, XMarkIcon, CameraIcon, PhotoIcon,
+  ExclamationTriangleIcon, PencilIcon, ClipboardDocumentCheckIcon,
+} from '../design/icons'
 import { colors as C_, space, radius as R, shadow, text as TT, T, type as TY, motion as MO } from '../design/tokens'
 import { fmtMoney, smartDate, getStatus } from '../design/business'
 import { Sheet, StatusBadge, KPITile, StatGrid } from '../design/components'
@@ -76,17 +82,17 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
     else { setSheet(null); setForm({}); setEditId(null) }
   }
 
-  const MODULES: { key: FinModule; label: string; icon: string }[] = [
-    { key:'dashboard',      label:'Dashboard',     icon:'⚡' },
-    { key:'funding',        label:'Funding',       icon:'💰' },
-    { key:'receivables',    label:'Receivables',   icon:'📥' },
-    { key:'payables',       label:'Payables',      icon:'📤' },
-    { key:'cashbook',       label:'Cash Book',     icon:'📒' },
-    { key:'banks',          label:'Bank Accounts', icon:'🏦' },
-    { key:'forecast',       label:'Cash Flow',     icon:'📈' },
-    { key:'profitability',  label:'Profitability', icon:'📊' },
-    { key:'timeline',       label:'Timeline',      icon:'🗓' },
-    { key:'credentials',    label:'Credentials',   icon:'🔐' },
+  const MODULES: { key: FinModule; label: string }[] = [
+    { key:'dashboard',     label:'Dashboard' },
+    { key:'funding',       label:'Funding' },
+    { key:'receivables',   label:'Receivables' },
+    { key:'payables',      label:'Payables' },
+    { key:'cashbook',      label:'Cash Book' },
+    { key:'banks',         label:'Bank Accounts' },
+    { key:'forecast',      label:'Cash Flow' },
+    { key:'profitability', label:'Profitability' },
+    { key:'timeline',      label:'Timeline' },
+    { key:'credentials',   label:'Credentials' },
   ]
 
   const s = fin.summary
@@ -286,9 +292,9 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
                   </div>
                 </div>
                 <div style={{ display:'flex', gap:space[3], flexWrap:'wrap', fontSize:'12px', color:C.slate }}>
-                  <span>📅 {fmtDate(f.date_received)}</span>
-                  {f.repayment_date && <span style={{ color: isOD ? C_.danger : C.slate }}>⏰ Due: {fmtDate(f.repayment_date)}{isOD ? ` (${f.days_overdue}d late)` : f.days_remaining != null ? ` (${f.days_remaining}d left)` : ''}</span>}
-                  {f.interest_type !== 'None' && <span>📈 {f.interest_rate}% {f.interest_type}</span>}
+                  <span style={{ display:'inline-flex', alignItems:'center', gap:'4px' }}><Ico icon={CalendarDaysIcon} size={14}/>{fmtDate(f.date_received)}</span>
+                  {f.repayment_date && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', color: isOD ? C_.danger : C.slate }}><Ico icon={ClockIcon} size={14}/>Due: {fmtDate(f.repayment_date)}{isOD ? ` (${f.days_overdue}d late)` : f.days_remaining != null ? ` (${f.days_remaining}d left)` : ''}</span>}
+                  {f.interest_type !== 'None' && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px' }}><Ico icon={ArrowTrendingUpIcon} size={14}/>{f.interest_rate}% {f.interest_type}</span>}
                 </div>
                 {f.notes && <div style={{ marginTop:space[2], fontSize:'12px', color:C.slate, padding:space[2], background:C.mist, borderRadius:R.md }}>{f.notes}</div>}
               </div>
@@ -389,9 +395,9 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
                 </div>
               </div>
               <div style={{ display:'flex', gap:space[3], flexWrap:'wrap', fontSize:'12px', color:C.slate }}>
-                <span>📅 Bill: {fmtDate(r.bill_date)}</span>
-                {r.expected_date && <span style={{ color:isOD?C_.danger:C.slate }}>⏰ Expected: {fmtDate(r.expected_date)}{isOD?` (${r.delay_days}d late)`:''}</span>}
-                {r.retention_pct > 0 && <span>📌 Retention: {r.retention_pct}%</span>}
+                <span style={{ display:'inline-flex', alignItems:'center', gap:'4px' }}><Ico icon={CalendarDaysIcon} size={14}/>Bill: {fmtDate(r.bill_date)}</span>
+                {r.expected_date && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', color:isOD?C_.danger:C.slate }}><Ico icon={ClockIcon} size={14}/>Expected: {fmtDate(r.expected_date)}{isOD?` (${r.delay_days}d late)`:''}</span>}
+                {r.retention_pct > 0 && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px' }}><Ico icon={TagIcon} size={14}/>Retention: {r.retention_pct}%</span>}
               </div>
               {r.remarks && <div style={{ marginTop:space[2], fontSize:'12px', color:C.slate }}>{r.remarks}</div>}
               {(r as any).bill_photo_path && (
@@ -399,7 +405,7 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
                   <img src={`https://yvllrkopqcmiynofayif.supabase.co/storage/v1/object/public/photos/${(r as any).bill_photo_path}`} alt="Bill scan"
                     style={{ width:'100%', maxHeight:'160px', objectFit:'cover', borderRadius:R.lg, cursor:'pointer', border:`1px solid ${C.border}` }}
                     onClick={() => window.open(`https://yvllrkopqcmiynofayif.supabase.co/storage/v1/object/public/photos/${(r as any).bill_photo_path}`, '_blank')}/>
-                  <button onClick={() => { if(confirm('Remove bill scan?')) fin.removeBillPhoto(r.id) }} style={{ background:'none', border:'none', color:C_.danger, fontSize:'11px', cursor:'pointer', padding:`${space[1]} 0`, textDecoration:'underline' }}>📎 Remove scan</button>
+                  <button onClick={() => { if(confirm('Remove bill scan?')) fin.removeBillPhoto(r.id) }} style={{ background:'none', border:'none', color:C_.danger, fontSize:'11px', cursor:'pointer', padding:`${space[1]} 0`, textDecoration:'underline' }}>Remove scan</button>
                 </div>
               )}
             </div>
@@ -424,11 +430,11 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
               ) : (
                 <div style={{ display:'flex', gap:'8px' }}>
                   <label style={{ ...btnG, cursor:'pointer', flex:1 }}>
-                    📷 Camera
+                    <Ico icon={CameraIcon} size={16}/> Camera
                     <input type="file" accept="image/*" capture="environment" style={{ display:'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) { setBillPhotoFile(f); setBillPhotoPreview(URL.createObjectURL(f)) } }}/>
                   </label>
                   <label style={{ ...btnG, cursor:'pointer', flex:1 }}>
-                    🖼 Gallery
+                    <Ico icon={PhotoIcon} size={16}/> Gallery
                     <input type="file" accept="image/*" style={{ display:'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) { setBillPhotoFile(f); setBillPhotoPreview(URL.createObjectURL(f)) } }}/>
                   </label>
                 </div>
@@ -515,8 +521,8 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
                 </div>
               </div>
               <div style={{ display:'flex', gap:space[3], flexWrap:'wrap', fontSize:'12px', color:C.slate }}>
-                <span>📅 Invoice: {fmtDate(p.invoice_date)}</span>
-                {p.due_date && <span style={{ color:isOD?C_.danger:C.slate }}>⏰ Due: {fmtDate(p.due_date)}{isOD?` (${p.days_overdue}d late)`:''}</span>}
+                <span style={{ display:'inline-flex', alignItems:'center', gap:'4px' }}><Ico icon={CalendarDaysIcon} size={14}/>Invoice: {fmtDate(p.invoice_date)}</span>
+                {p.due_date && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', color:isOD?C_.danger:C.slate }}><Ico icon={ClockIcon} size={14}/>Due: {fmtDate(p.due_date)}{isOD?` (${p.days_overdue}d late)`:''}</span>}
                 {p.po_number && <span>PO: {p.po_number}</span>}
               </div>
               {p.remarks && <div style={{ marginTop:space[2], fontSize:'12px', color:C.slate }}>{p.remarks}</div>}
@@ -591,8 +597,8 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
                 <div style={{ fontSize:'15px', fontWeight:700, color: e.txn_type==='Credit'?C.green:C.red }}>{e.txn_type==='Credit'?'+':'-'}{fmtCur(e.amount)}</div>
                 {e.reference && <div style={{ fontSize:'10px', color:C.slate }}>{e.reference}</div>}
               </div>
-              <button onClick={() => { setForm({ ...e, txn_date:e.txn_date, project_id:e.project_id??'', bank_account_id:e.bank_account_id??'' }); setEditId(e.id); setSheet('cash-entry') }} style={{ ...btnG, padding:'6px 10px' }}>✎</button>
-              <button onClick={() => { if(confirm('Delete?')) fin.deleteCashEntry(e.id) }} style={btnD}>✕</button>
+              <button onClick={() => { setForm({ ...e, txn_date:e.txn_date, project_id:e.project_id??'', bank_account_id:e.bank_account_id??'' }); setEditId(e.id); setSheet('cash-entry') }} style={{ ...btnG, padding:'6px 10px' , display:'flex', alignItems:'center' }}><Ico icon={PencilIcon} size={14}/></button>
+              <button onClick={() => { if(confirm('Delete?')) fin.deleteCashEntry(e.id) }} style={btnD}><Ico icon={XMarkIcon} size={16}/></button>
             </div>
           ))}
         </div>
@@ -711,7 +717,7 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
           {/* Warning if balance goes negative */}
           {forecast.some(d => d.closingBalance < 0) && (
             <div style={{ padding:'14px 16px', background:C.redBg, borderLeft:`3px solid ${C.red}`, borderRadius:'0 14px 14px 0', marginTop:'14px', fontSize:'13px' }}>
-              ⚠ <strong>Cash shortfall projected</strong> — balance goes negative within {forecastDays} days. Review payables or accelerate receivables.
+              <span style={{display:'inline-flex',alignItems:'center',gap:'4px'}}><Ico icon={ExclamationTriangleIcon} size={14}/><strong>Cash shortfall projected</strong></span>{' — balance goes negative within '}{forecastDays}{' days. Review payables or accelerate receivables.'}
             </div>
           )}
         </div>
@@ -852,7 +858,7 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
                       </div>
                       <div style={{ display:'flex', gap:'6px' }}>
                         <button style={btnG} onClick={() => { setForm({...c}); setEditId(c.id); setSheet('cred') }}>Edit</button>
-                        <button style={btnD} onClick={() => deleteCred(c.id)}>✕</button>
+                        <button style={btnD} onClick={() => deleteCred(c.id)}><Ico icon={XMarkIcon} size={16}/></button>
                       </div>
                     </div>
                     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
@@ -862,7 +868,7 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
                           <div style={{ fontSize:'13px', fontWeight:600, color:C.navy, display:'flex', alignItems:'center', gap:'6px' }}>
                             <span style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.username}</span>
                             <button onClick={() => { navigator.clipboard.writeText(c.username); alert('Copied!') }}
-                              style={{ background:'none', border:'none', cursor:'pointer', padding:'2px', color:C.slate, fontSize:'12px' }}>📋</button>
+                              style={{ background:'none', border:'none', cursor:'pointer', padding:'2px', color:C.slate, display:'flex', alignItems:'center' }}><Ico icon={ClipboardDocumentCheckIcon} size={16}/></button>
                           </div>
                         </div>
                       )}
@@ -875,10 +881,10 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
                             </span>
                             <button onClick={() => setShowPass(p => ({...p, [c.id]: !p[c.id]}))}
                               style={{ background:'none', border:'none', cursor:'pointer', padding:'2px', color:C.slate, fontSize:'12px' }}>
-                              {showPass[c.id] ? '🙈' : '👁'}
+                              {showPass[c.id] ? <Ico icon={EyeSlashIcon} size={16}/> : <Ico icon={EyeIcon} size={16}/>}
                             </button>
                             <button onClick={() => { navigator.clipboard.writeText(c.password); alert('Copied!') }}
-                              style={{ background:'none', border:'none', cursor:'pointer', padding:'2px', color:C.slate, fontSize:'12px' }}>📋</button>
+                              style={{ background:'none', border:'none', cursor:'pointer', padding:'2px', color:C.slate, display:'flex', alignItems:'center' }}><Ico icon={ClipboardDocumentCheckIcon} size={16}/></button>
                           </div>
                         </div>
                       )}

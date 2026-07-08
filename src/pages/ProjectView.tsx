@@ -8,6 +8,15 @@ import { supabase } from '../lib/supabase'
 import { useProjectData } from '../hooks/useProjectData'
 import { can, PROJECT_TABS } from '../lib/rbac'
 import { colors as C_, space, radius as R, T, type as TY } from '../design/tokens'
+import {
+  Ico, STAGE_ICON_MAP, DOC_ICON_MAP,
+  CalendarDaysIcon, BuildingStorefrontIcon, TagIcon,
+  CloudIcon, UsersIcon, UserIcon, ShieldExclamationIcon,
+  CameraIcon, PhotoIcon, ExclamationTriangleIcon,
+  ClipboardDocumentListIcon, FlagIcon, CubeIcon, DocumentTextIcon,
+  TableCellsIcon, BanknotesIcon, FolderIcon, CheckCircleIcon,
+  XMarkIcon, PencilIcon, ChevronRightIcon,
+} from '../design/icons'
 import { fmtMoney, smartDate, daysLeft, isOverdue, projectHealth, getStatus, initials } from '../design/business'
 import {
   toast, Sheet, FormGroup, RangeField, EmptyState, Badge, ProgressBar,
@@ -17,16 +26,13 @@ import type { Project, User, UserRole, Milestone } from '../types'
 
 // ── Constants ─────────────────────────────────────────────────
 const STAGES       = ['Tender','Planning','Procurement','Site Prep','Foundation','Civil Works','MGPS','HVAC','Electrical','Plumbing','Finishing','Testing','Commissioning','Handover']
-const STAGE_EMOJIS = ['📋','📐','🛒','🚧','🏗','🧱','🔵','❄️','⚡','🔧','🎨','🧪','⚙️','🏁']
+// Stage icons provided by STAGE_ICON_MAP from design/icons
 const MAT_STATUSES = ['Pending','Ordered','In Transit','Delivered','Partially Delivered','Delayed','Cancelled']
 const DOC_TYPES    = ['Drawing','BOQ','Certificate','Contract','Report','Invoice','Photo','Approval','Other']
 const LOG_TRADES   = ['Masons','Carpenters','Electricians','Plumbers','Welders','Helpers','Engineers','Others']
 const MS_PRIORITIES= ['Low','Medium','High','Critical']
 const EXP_CATS     = ['Materials','Labour','Equipment','Transport','Subcontract','Professional Fees','Admin','Other']
-const DOC_ICONS: Record<string,string> = {
-  Drawing:'📐', BOQ:'📊', Certificate:'📜', Contract:'📄',
-  Report:'📋', Invoice:'🧾', Photo:'📸', Approval:'✅', Other:'📁'
-}
+// Doc icons provided by DOC_ICON_MAP from design/icons
 
 // ── Color aliases ──────────────────────────────────────────────
 const C = {
@@ -96,7 +102,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
   const save = async (fn: () => Promise<string | null>) => {
     const err = await fn()
     if (err) toast('Error: ' + err)
-    else { toast('Saved ✓'); setSheet(null) }
+    else { toast('Saved'); setSheet(null) }
   }
 
   // ── Tab bar ────────────────────────────────────────────────
@@ -262,7 +268,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
                 }} style={{ display:'flex', gap: space[3], padding:`${space[3]} ${space[4]}`, borderBottom: i < STAGES.length-1 ? `1px solid ${C.border}` : 'none', alignItems:'center', cursor:'pointer' }}>
                   {/* Step indicator */}
                   <div style={{ width:'32px', height:'32px', borderRadius: R.md, border:`2px solid ${active ? C.navy : done ? C_.success : C.border}`, background: active ? C.navy : done ? C_.success : '#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize: TY.sizeMd, flexShrink:0, color: (active||done) ? '#fff' : C.slate }}>
-                    {done ? '✓' : STAGE_EMOJIS[i]}
+                    {done ? <Ico icon={CheckCircleIcon} size={16}/> : <Ico icon={STAGE_ICON_MAP[s] || ClipboardDocumentListIcon} size={18}/>}
                   </div>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize: TY.sizeLg, fontWeight: active ? TY.weightBold : TY.weightMedium, color: active ? C.navy : done ? C_.success : C.slate }}>
@@ -301,19 +307,19 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
                 <div style={{ display:'flex', gap: space[3], padding:`${space[3]} ${space[4]}`, borderBottom:`1px solid ${C.border}`, alignItems:'center' }}>
                   {/* Checkbox */}
                   <div onClick={() => onToggle(m.id, !m.done)} style={{ width:'22px', height:'22px', borderRadius:'6px', border:`2px solid ${m.done ? C_.success : over ? C_.danger : C.border}`, background: m.done ? C_.success : 'transparent', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, transition:'all .15s' }}>
-                    {m.done && <span style={{ fontSize:'12px', fontWeight:700 }}>✓</span>}
+                    {m.done && <span style={{ fontSize:'12px', fontWeight:700 }}></span>}
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize: TY.sizeLg, fontWeight: TY.weightSemibold, textDecoration: m.done ? 'line-through' : 'none', color: m.done ? C.slate : C.ink, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.name}</div>
                     <div style={{ display:'flex', gap: space[2], marginTop:'3px', flexWrap:'wrap', alignItems:'center' }}>
-                      <span style={{ fontSize: TY.sizeSm, color: over ? C_.danger : C.slate }}>{over ? '⚠ ' : ''}{fmtDate(m.due_date)}</span>
+                      <span style={{ fontSize: TY.sizeSm, color: over ? C_.danger : C.slate }}>{}{m.due_date ? fmtDate(m.due_date) : ''}</span>
                       {m.priority && <span style={{ padding:`1px ${space[2]}`, borderRadius: R.pill, fontSize: TY.sizeXs, fontWeight: TY.weightBold, background: pc, color: tc }}>{m.priority}</span>}
                       {m.assignee && <span style={{ fontSize: TY.sizeXs, color: C.slate }}>{m.assignee.full_name}</span>}
                     </div>
                   </div>
                   <div style={{ fontSize: TY.sizeSm, fontWeight: TY.weightBold, color: C_.info, marginRight: space[1] }}>{m.pct ?? 0}%</div>
                   <button onClick={() => onEdit(m)} style={{ ...btnG, padding:`${space[1]} ${space[2]}`, fontSize: TY.sizeSm, height:'32px' }}>Edit</button>
-                  <button onClick={() => onDelete(m.id)} style={{ ...btnD, height:'32px', padding:`0 ${space[2]}` }}>✕</button>
+                  <button onClick={() => onDelete(m.id)} style={{ ...btnD, height:'32px', padding:`0 ${space[2]}` , display:'flex', alignItems:'center', justifyContent:'center' }}><Ico icon={XMarkIcon} size={16}/></button>
                 </div>
               )
             }
@@ -322,7 +328,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
               <>
                 {overdue.length > 0 && (
                   <div style={{ marginBottom: space[4] }}>
-                    <div style={{ fontSize: TY.sizeXs, fontWeight: TY.weightBold, color: C_.danger, textTransform:'uppercase', letterSpacing: TY.trackingWide, marginBottom: space[2] }}>⚠ Overdue · {overdue.length}</div>
+                    <div style={{ fontSize: TY.sizeXs, fontWeight: TY.weightBold, color: C_.danger, textTransform:'uppercase', letterSpacing: TY.trackingWide, marginBottom: space[2] }}>Overdue · {overdue.length}</div>
                     <div style={{ ...card, border:`1px solid ${C_.dangerBg}` }}>{overdue.map(m => <MilestoneRow key={m.id} m={m} onEdit={(x)=>{ setMsForm({ ...x, due_date: x.due_date ?? '', assignee_id: x.assignee_id ?? '', priority: x.priority, pct: x.pct, notes: x.notes ?? '' }); setEditMs(x.id); setSheet('milestone') }} onDelete={(id)=>{ if(confirm('Delete?')) pd.deleteMilestone(id) }} onToggle={pd.toggleMilestone}/>)}</div>
                   </div>
                 )}
@@ -385,7 +391,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
                   <div style={{ display:'flex', gap: space[1], alignItems:'center', flexShrink:0 }}>
                     {l.day_progress != null && <Badge label={`${l.day_progress}%`} color="blue"/>}
                     <button onClick={() => { setLogForm({ ...l, log_date: l.log_date, labour: l.labour ?? {} }); setEditLog(l.id); setSheet('log') }} style={{ ...btnG, height:'30px', padding:`0 ${space[2]}`, fontSize: TY.sizeSm }}>Edit</button>
-                    <button onClick={() => { if(confirm('Delete log?')) pd.deleteLog(l.id) }} style={{ ...btnD, height:'30px', padding:`0 ${space[2]}` }}>✕</button>
+                    <button onClick={() => { if(confirm('Delete log?')) pd.deleteLog(l.id) }} style={{ ...btnD, height:'30px', padding:`0 ${space[2]}` , display:'flex', alignItems:'center', justifyContent:'center' }}><Ico icon={XMarkIcon} size={16}/></button>
                   </div>
                 </div>
 
@@ -402,10 +408,10 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
 
                   {/* Chips */}
                   <div style={{ display:'flex', flexWrap:'wrap', gap: space[1] }}>
-                    {l.weather && <span style={{ padding:`${space[1]} ${space[2]}`, background: C.mist, borderRadius: R.pill, fontSize: TY.sizeSm, color: C.slate, border:`1px solid ${C.border}` }}>🌤 {l.weather}</span>}
-                    {labourTotal > 0 && <span style={{ padding:`${space[1]} ${space[2]}`, background: C.mist, borderRadius: R.pill, fontSize: TY.sizeSm, color: C.slate, border:`1px solid ${C.border}` }}>👷 {labourTotal} workers</span>}
-                    {l.client_visit && <span style={{ padding:`${space[1]} ${space[2]}`, background: C_.infoBg, borderRadius: R.pill, fontSize: TY.sizeSm, color: C_.info, border:`1px solid #bfdbfe` }}>👤 Client Visit</span>}
-                    {l.safety_issues && <span style={{ padding:`${space[1]} ${space[2]}`, background: C_.dangerBg, borderRadius: R.pill, fontSize: TY.sizeSm, color: C_.danger, border:`1px solid #fecaca` }}>🦺 Safety Issue</span>}
+                    {l.weather && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', padding:`${space[1]} ${space[2]}`, background: C.mist, borderRadius: R.pill, fontSize: TY.sizeSm, color: C.slate, border:`1px solid ${C.border}` }}><Ico icon={CloudIcon} size={14}/>{l.weather}</span>}
+                    {labourTotal > 0 && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', padding:`${space[1]} ${space[2]}`, background: C.mist, borderRadius: R.pill, fontSize: TY.sizeSm, color: C.slate, border:`1px solid ${C.border}` }}><Ico icon={UsersIcon} size={14}/>{labourTotal} workers</span>}
+                    {l.client_visit && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', padding:`${space[1]} ${space[2]}`, background: C_.infoBg, borderRadius: R.pill, fontSize: TY.sizeSm, color: C_.info, border:`1px solid #bfdbfe` }}><Ico icon={UserIcon} size={14}/>Client Visit</span>}
+                    {l.safety_issues && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', padding:`${space[1]} ${space[2]}`, background: C_.dangerBg, borderRadius: R.pill, fontSize: TY.sizeSm, color: C_.danger, border:`1px solid #fecaca` }}><Ico icon={ShieldExclamationIcon} size={14}/>Safety Issue</span>}
                   </div>
 
                   {l.next_plan && (
@@ -421,7 +427,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
                       {logPhotos.map(ph => (
                         <div key={ph.id} style={{ aspectRatio:'1', background: C.mist, borderRadius: R.md, overflow:'hidden', position:'relative', cursor:'pointer' }}>
                           <img src={ph.public_url} alt="" loading="lazy" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} onClick={() => window.open(ph.public_url, '_blank')}/>
-                          <button onClick={() => { if(confirm('Delete photo?')) pd.deletePhoto(ph.id) }} style={{ position:'absolute', top:'3px', right:'3px', width:'18px', height:'18px', borderRadius:'50%', background:'rgba(220,38,38,.85)', color:'#fff', border:'none', fontSize:'10px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+                          <button onClick={() => { if(confirm('Delete photo?')) pd.deletePhoto(ph.id) }} style={{ position:'absolute', top:'3px', right:'3px', width:'18px', height:'18px', borderRadius:'50%', background:'rgba(220,38,38,.85)', color:'#fff', border:'none', fontSize:'10px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}><Ico icon={XMarkIcon} size={16}/></button>
                         </div>
                       ))}
                     </div>
@@ -430,11 +436,11 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
                   {/* Camera / Gallery */}
                   <div style={{ display:'flex', gap: space[2], marginTop: space[3] }}>
                     <label style={{ ...btnG, cursor:'pointer', height:'36px', flex:1 }}>
-                      📷 Camera
+                      <Ico icon={CameraIcon} size={16}/> Camera
                       <input type="file" accept="image/*" capture="environment" style={{ display:'none' }} onChange={e => { const files = Array.from(e.target.files||[]); if(files.length) pd.addPhotos(files, 'General', l.id) }}/>
                     </label>
                     <label style={{ ...btnG, cursor:'pointer', height:'36px', flex:1 }}>
-                      🖼 Gallery
+                      <Ico icon={PhotoIcon} size={16}/> Gallery
                       <input type="file" accept="image/*" multiple style={{ display:'none' }} onChange={e => { const files = Array.from(e.target.files||[]); if(files.length) pd.addPhotos(files, 'General', l.id) }}/>
                     </label>
                   </div>
@@ -510,8 +516,8 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
 
                   {/* Info chips */}
                   <div style={{ display:'flex', flexWrap:'wrap', gap: space[1], marginBottom: space[3] }}>
-                    {m.supplier && <span style={{ fontSize: TY.sizeSm, color: C.slate, padding:`${space[1]} ${space[2]}`, background: C.mist, borderRadius: R.pill }}>🏭 {m.supplier}</span>}
-                    {m.delivery_eta && <span style={{ fontSize: TY.sizeSm, color: C.slate, padding:`${space[1]} ${space[2]}`, background: C.mist, borderRadius: R.pill }}>📅 ETA: {fmtDate(m.delivery_eta)}</span>}
+                    {m.supplier && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize: TY.sizeSm, color: C.slate, padding:`${space[1]} ${space[2]}`, background: C.mist, borderRadius: R.pill }}><Ico icon={BuildingStorefrontIcon} size={14}/>{m.supplier}</span>}
+                    {m.delivery_eta && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize: TY.sizeSm, color: C.slate, padding:`${space[1]} ${space[2]}`, background: C.mist, borderRadius: R.pill }}><Ico icon={CalendarDaysIcon} size={14}/>ETA: {fmtDate(m.delivery_eta)}</span>}
                     {m.po_number && <span style={{ fontSize: TY.sizeSm, color: C.slate, padding:`${space[1]} ${space[2]}`, background: C.mist, borderRadius: R.pill }}>PO: {m.po_number}</span>}
                   </div>
 
@@ -598,7 +604,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
                     <span style={{ padding:`1px ${space[2]}`, borderRadius: R.pill, fontSize: TY.sizeXs, fontWeight: TY.weightBold, background: sc.bg, color: sc.color }}>{e.payment_status}</span>
                   </div>
                   <button onClick={() => { setExpForm({...e}); setSheet('expense-edit-'+e.id) }} style={{ ...btnG, height:'30px', padding:`0 ${space[2]}`, fontSize: TY.sizeSm }}>Edit</button>
-                  <button onClick={() => pd.deleteExpense(e.id)} style={{ ...btnD, height:'30px', padding:`0 ${space[2]}` }}>✕</button>
+                  <button onClick={() => pd.deleteExpense(e.id)} style={{ ...btnD, height:'30px', padding:`0 ${space[2]}` , display:'flex', alignItems:'center', justifyContent:'center' }}><Ico icon={XMarkIcon} size={16}/></button>
                 </div>
               )
             })}
@@ -655,7 +661,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
 
           <div style={{ display:'flex', gap: space[2], justifyContent:'flex-end', marginBottom: space[3] }}>
             <label style={{ ...btnG, cursor:'pointer', height:'44px' }}>
-              📁 CSV
+              CSV
               <input type="file" accept=".csv" style={{ display:'none' }} onChange={async e => {
                 const file = e.target.files?.[0]; if (!file) return
                 const text = await file.text()
@@ -666,7 +672,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
                   if (!cols[0]) continue
                   await pd.addBOQ({ description:cols[0], spec:cols[1], unit:cols[2], qty:Number(cols[3]||0), rate:Number(cols[4]||0), exec_qty:0 })
                 }
-                toast('BOQ imported ✓')
+                toast('BOQ imported')
               }}/>
             </label>
             <button style={btnP} onClick={() => { setBoqForm({ exec_qty: 0 }); setSheet('boq') }}>＋ Add</button>
@@ -741,7 +747,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
                 <div key={d.id} style={{ display:'flex', gap: space[3], padding:`${space[3]} ${space[4]}`, borderBottom: i < pd.documents.length-1 ? `1px solid ${C.border}` : 'none', alignItems:'center' }}>
                   {/* Icon */}
                   <div onClick={() => { const url = d.external_url || d.public_url; if (url) window.open(url, '_blank') }} style={{ width:'40px', height:'40px', borderRadius: R.md, background: C.mist, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px', flexShrink:0, cursor: d.external_url || d.public_url ? 'pointer' : 'default' }}>
-                    {DOC_ICONS[d.type] || '📁'}
+                    <Ico icon={DOC_ICON_MAP[d.type] || FolderIcon} size={20}/>
                   </div>
                   <div style={{ flex:1, minWidth:0, cursor: d.external_url || d.public_url ? 'pointer' : 'default' }} onClick={() => { const url = d.external_url || d.public_url; if (url) window.open(url, '_blank') }}>
                     <div style={{ fontSize: TY.sizeLg, fontWeight: TY.weightSemibold, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d.name}</div>
@@ -752,7 +758,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
                     </div>
                   </div>
                   <button onClick={() => { setDocForm({...d}); setSheet('document-edit-'+d.id) }} style={{ ...btnG, height:'30px', padding:`0 ${space[2]}`, fontSize: TY.sizeSm }}>Edit</button>
-                  <button onClick={() => pd.deleteDocument(d.id)} style={{ ...btnD, height:'30px', padding:`0 ${space[2]}` }}>✕</button>
+                  <button onClick={() => pd.deleteDocument(d.id)} style={{ ...btnD, height:'30px', padding:`0 ${space[2]}` , display:'flex', alignItems:'center', justifyContent:'center' }}><Ico icon={XMarkIcon} size={16}/></button>
                 </div>
               )
             })}
@@ -782,11 +788,11 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
         <div style={{ padding: space[4] }}>
           <div style={{ display:'flex', gap: space[2], justifyContent:'flex-end', marginBottom: space[3] }}>
             <label style={{ ...btnG, cursor:'pointer', height:'44px' }}>
-              📷 Camera
+              <Ico icon={CameraIcon} size={16}/> Camera
               <input type="file" accept="image/*" capture="environment" style={{ display:'none' }} onChange={e => { const files = Array.from(e.target.files||[]); if(files.length) pd.addPhotos(files) }}/>
             </label>
             <label style={{ ...btnP, cursor:'pointer', height:'44px' }}>
-              🖼 Gallery
+              <Ico icon={PhotoIcon} size={16}/> Gallery
               <input type="file" accept="image/*" multiple style={{ display:'none' }} onChange={e => { const files = Array.from(e.target.files||[]); if(files.length) pd.addPhotos(files) }}/>
             </label>
           </div>
@@ -806,7 +812,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
                 <div style={{ position:'absolute', bottom:0, left:0, right:0, background:'linear-gradient(transparent,rgba(0,0,0,.6))', color:'#fff', fontSize:'9px', padding:'12px 6px 4px', fontWeight: TY.weightMedium }}>
                   {ph.category}
                 </div>
-                <button onClick={() => { if(confirm('Delete photo?')) pd.deletePhoto(ph.id) }} style={{ position:'absolute', top:'4px', right:'4px', width:'22px', height:'22px', borderRadius:'50%', background:'rgba(220,38,38,.85)', color:'#fff', border:'none', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+                <button onClick={() => { if(confirm('Delete photo?')) pd.deletePhoto(ph.id) }} style={{ position:'absolute', top:'4px', right:'4px', width:'22px', height:'22px', borderRadius:'50%', background:'rgba(220,38,38,.85)', color:'#fff', border:'none', fontSize:'12px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}><Ico icon={XMarkIcon} size={16}/></button>
               </div>
             ))}
           </div>
@@ -819,12 +825,12 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
       {sheet === 'quick-add' && (
         <Sheet title="Quick Add" onClose={() => setSheet(null)}>
           {[
-            { ic:'📝', lbl:'Daily Log',   key:'log',      perm:'logs'        },
-            { ic:'📋', lbl:'Milestone',   key:'milestone',perm:'milestones'  },
-            { ic:'📦', lbl:'Material',    key:'material', perm:'materials'   },
-            { ic:'💰', lbl:'Expense',     key:'expense',  perm:'expenses'    },
-            { ic:'📁', lbl:'Document',    key:'document', perm:''            },
-            { ic:'📊', lbl:'BOQ Item',    key:'boq',      perm:''            },
+            { ic:<Ico icon={ClipboardDocumentListIcon} size={20}/>, lbl:'Daily Log',   key:'log',      perm:'logs'        },
+            { ic:<Ico icon={FlagIcon} size={20}/>, lbl:'Milestone',   key:'milestone',perm:'milestones'  },
+            { ic:<Ico icon={CubeIcon} size={20}/>, lbl:'Material',    key:'material', perm:'materials'   },
+            { ic:<Ico icon={BanknotesIcon} size={20}/>, lbl:'Expense',     key:'expense',  perm:'expenses'    },
+            { ic:<Ico icon={DocumentTextIcon} size={20}/>, lbl:'Document',    key:'document', perm:''            },
+            { ic:<Ico icon={TableCellsIcon} size={20}/>, lbl:'BOQ Item',    key:'boq',      perm:''            },
           ].filter(x => !x.perm || can(role, x.perm as any)).map(x => (
             <div key={x.key} onClick={() => {
               setLogForm({ log_date: today(), labour: {} })
@@ -835,7 +841,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
               setBoqForm({ exec_qty: 0 })
               setSheet(x.key)
             }} style={{ display:'flex', alignItems:'center', gap: space[3], padding:`${space[3]} 0`, borderBottom:`1px solid ${C.border}`, cursor:'pointer' }}>
-              <div style={{ width:'40px', height:'40px', borderRadius: R.md, background: C.mist, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'20px' }}>{x.ic}</div>
+              <div style={{ width:'40px', height:'40px', borderRadius: R.md, background: C.mist, display:'flex', alignItems:'center', justifyContent:'center', color: C_.textSecondary }}>{x.ic}</div>
               <div style={{ fontSize: TY.sizeLg, fontWeight: TY.weightSemibold }}>{x.lbl}</div>
               <div style={{ marginLeft:'auto' }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.slate} strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>

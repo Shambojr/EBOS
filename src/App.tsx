@@ -1,5 +1,11 @@
 // EBOS Site Manager — Stage 3 complete
 import { useState, useEffect, useRef } from 'react'
+import {
+  HomeIcon, BuildingOffice2Icon, ClipboardDocumentListIcon, CurrencyRupeeIcon,
+  EllipsisHorizontalIcon, CheckIcon, BellIcon, CalendarDaysIcon, MapPinIcon,
+  ChevronLeftIcon, ChevronRightIcon, ExclamationTriangleIcon, ArrowRightOnRectangleIcon,
+  UsersIcon, Ico,
+} from './design/icons'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { useProjects } from './hooks/useProjects'
 import { useNotifications } from './hooks/useNotifications'
@@ -117,7 +123,7 @@ function InnerApp() {
       <div style={{ display:'flex', alignItems:'center', gap:'8px', flex:1, minWidth:0 }}>
         {view === 'project' ? (
           <button onClick={goBack} style={{ display:'flex', alignItems:'center', gap:'5px', fontSize:'14px', fontWeight:600, color: C.navy, background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', minWidth:0 }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <Ico icon={ChevronLeftIcon} size={20}/>
             <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{activeProject?.name}</span>
           </button>
         ) : (
@@ -136,10 +142,8 @@ function InnerApp() {
         </div>
         {/* Notifications */}
         <button onClick={() => setShowNotifs(true)}
-          style={{ width:'36px', height:'36px', display:'flex', alignItems:'center', justifyContent:'center', background:'none', border:'none', cursor:'pointer', borderRadius:'10px', position:'relative' }}>
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke={C.slate} strokeWidth="1.8" strokeLinecap="round">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-          </svg>
+          style={{ width:'36px', height:'36px', display:'flex', alignItems:'center', justifyContent:'center', background:'none', border:'none', cursor:'pointer', borderRadius:'10px', position:'relative', color: C.slate }}>
+          <Ico icon={BellIcon} size={20}/>
           {unreadCount > 0 && <span style={{ position:'absolute', top:'7px', right:'7px', width:'6px', height:'6px', borderRadius:'50%', background: C.red }}/>}
         </button>
         {/* Avatar → profile sheet */}
@@ -153,13 +157,13 @@ function InnerApp() {
 
   // ── BOTTOM NAV ─────────────────────────────────────────────
   const NAV_ICONS: Record<string, JSX.Element> = {
-    home:     <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
-    projects: <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>,
-    logs:     <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
-    workspace: <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>,
-    finance:  <svg viewBox="0 0 24 24" style={{width:22,height:22,fill:'currentColor'}}><path d="M12.9494914,6 C13.4853936,6.52514205 13.8531598,7.2212202 13.9645556,8 L17.5,8 C17.7761424,8 18,8.22385763 18,8.5 C18,8.77614237 17.7761424,9 17.5,9 L13.9645556,9 C13.7219407,10.6961471 12.263236,12 10.5,12 L7.70710678,12 L13.8535534,18.1464466 C14.0488155,18.3417088 14.0488155,18.6582912 13.8535534,18.8535534 C13.6582912,19.0488155 13.3417088,19.0488155 13.1464466,18.8535534 L6.14644661,11.8535534 C5.83146418,11.538571 6.05454757,11 6.5,11 L10.5,11 C11.709479,11 12.7183558,10.1411202 12.9499909,9 L6.5,9 C6.22385763,9 6,8.77614237 6,8.5 C6,8.22385763 6.22385763,8 6.5,8 L12.9499909,8 C12.7183558,6.85887984 11.709479,6 10.5,6 L6.5,6 C6.22385763,6 6,5.77614237 6,5.5 C6,5.22385763 6.22385763,5 6.5,5 L10.5,5 L17.5,5 C17.7761424,5 18,5.22385763 18,5.5 C18,5.77614237 17.7761424,6 17.5,6 L12.9494914,6 Z"/></svg>,
-    activity: <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
-    more:     <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>,
+    home:      <Ico icon={HomeIcon} size={24}/>,
+    projects:  <Ico icon={BuildingOffice2Icon} size={24}/>,
+    logs:      <Ico icon={ClipboardDocumentListIcon} size={24}/>,
+    workspace: <Ico icon={CheckIcon} size={24}/>,
+    finance:   <Ico icon={CurrencyRupeeIcon} size={24}/>,
+    activity:  <Ico icon={ClipboardDocumentListIcon} size={24}/>,
+    more:      <Ico icon={EllipsisHorizontalIcon} size={24}/>,
   }
   const BottomNav = () => {
     // Insert FAB between left and right tab groups — never replaces a real tab
@@ -288,12 +292,12 @@ function InnerApp() {
                 <div onClick={() => setView('workspace')} style={{ ...card, padding:'14px', cursor:'pointer' }}>
                   <div style={{ fontSize:'9px', fontWeight:700, color: ws.overdueTasks.length>0?C.red:C.slate, textTransform:'uppercase', letterSpacing:'.07em', marginBottom:'4px' }}>My Tasks</div>
                   <div style={{ fontSize:'22px', fontWeight:800, color: ws.overdueTasks.length>0?C.red:C.navy }}>{ws.myTasks.length}</div>
-                  {ws.overdueTasks.length>0 && <div style={{ fontSize:'11px', color:C.red }}>⚠ {ws.overdueTasks.length} overdue</div>}
+                  {ws.overdueTasks.length>0 && <div style={{ fontSize:'11px', color:C.red, display:'flex', alignItems:'center', gap:'3px' }}><Ico icon={ExclamationTriangleIcon} size={12}/>{ws.overdueTasks.length} overdue</div>}
                 </div>
                 <div onClick={() => setView('workspace')} style={{ ...card, padding:'14px', cursor:'pointer' }}>
                   <div style={{ fontSize:'9px', fontWeight:700, color: ws.todayReminders.length>0?C.amber:C.slate, textTransform:'uppercase', letterSpacing:'.07em', marginBottom:'4px' }}>Reminders</div>
                   <div style={{ fontSize:'22px', fontWeight:800, color: ws.todayReminders.length>0?C.amber:C.navy }}>{ws.todayReminders.length}</div>
-                  {ws.overdueReminders.length>0 && <div style={{ fontSize:'11px', color:C.red }}>⚠ {ws.overdueReminders.length} overdue</div>}
+                  {ws.overdueReminders.length>0 && <div style={{ fontSize:'11px', color:C.red, display:'flex', alignItems:'center', gap:'3px' }}><Ico icon={ExclamationTriangleIcon} size={12}/>{ws.overdueReminders.length} overdue</div>}
                 </div>
               </div>
             </div>
@@ -371,8 +375,8 @@ function InnerApp() {
               </div>
               <div style={{ padding:'14px 16px' }}>
                 <div style={{ display:'flex', gap:'10px', flexWrap:'wrap', marginBottom:'12px' }}>
-                  <span style={{ fontSize:'12px', color: C.slate }}>📍 {p.location || '—'}</span>
-                  <span style={{ fontSize:'12px', color: C.slate }}>📅 {fmtDate(p.end_date)}</span>
+                  <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', fontSize:'12px', color: C.slate }}><Ico icon={MapPinIcon} size={14}/>{p.location}</span>
+                  <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', fontSize:'12px', color: C.slate }}><Ico icon={CalendarDaysIcon} size={14}/>{fmtDate(p.end_date)}</span>
                   {p.stage && <span style={{ fontSize:'12px', color: C.slate }}>{p.stage}</span>}
                 </div>
                 <div style={{ height:'5px', background: C.mist, borderRadius:'99px', overflow:'hidden', marginBottom:'6px' }}>
@@ -385,7 +389,7 @@ function InnerApp() {
               </div>
             </div>
             <div style={{ padding:'0 16px 14px' }}>
-              <button onClick={() => { setProjForm({ ...p }); setEditProjId(p.id); setSheet('edit-project') }} style={{ ...btnGhost, width:'100%', justifyContent:'center' }}>✎ Edit Project</button>
+              <button onClick={() => { setProjForm({ ...p }); setEditProjId(p.id); setSheet('edit-project') }} style={{ ...btnGhost, width:'100%', justifyContent:'center' }}>Edit Project</button>
             </div>
           </div>
         )
@@ -414,7 +418,7 @@ function InnerApp() {
               {role.replace(/_/g,' ')}
             </div>
           </div>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.slate} strokeWidth="1.8" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          <Ico icon={ChevronRightIcon} size={16} color={C.slate}/>
         </div>
       </div>
 
@@ -424,18 +428,18 @@ function InnerApp() {
         {can(role,'userManagement') && (
           <div style={{ display:'flex', gap:'14px', alignItems:'center', padding:'14px 16px', borderBottom:`1px solid ${C.border}`, cursor:'pointer' }} onClick={() => setView('users')}>
             <div style={{ width:'36px', height:'36px', borderRadius:'10px', background: C.mist, display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.slate} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+<Ico icon={UsersIcon} size={18}/>
             </div>
             <div style={{ flex:1 }}>
               <div style={{ fontSize:'15px', fontWeight:600, color: C.navy }}>User Management</div>
               <div style={{ fontSize:'12px', color: C.slate, marginTop:'1px' }}>Create and manage team accounts</div>
             </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.slate} strokeWidth="1.8" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            <Ico icon={ChevronRightIcon} size={16} color={C.slate}/>
           </div>
         )}
         <div style={{ display:'flex', gap:'14px', alignItems:'center', padding:'14px 16px', cursor:'pointer' }} onClick={() => setShowProfile(true)}>
           <div style={{ width:'36px', height:'36px', borderRadius:'10px', background: C.redBg, display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.red} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+<Ico icon={ArrowRightOnRectangleIcon} size={18}/>
           </div>
           <div style={{ flex:1 }}>
             <div style={{ fontSize:'15px', fontWeight:600, color: C.red }}>Sign Out</div>
@@ -477,7 +481,7 @@ function InnerApp() {
               if (editProjId) err = await updateProject(editProjId, projForm)
               else { const r = await createProject(projForm); err = r.error }
               if (err) toast('Error: ' + err)
-              else { setSheet(null); toast('Saved ✓') }
+              else { setSheet(null); toast('Saved') }
             }} style={{ ...btnPrimary, flex:1, justifyContent:'center' }}>Save</button>
           </>}>
           <FormGroup label="Project Name *"><input style={fieldStyle} value={projForm.name||''} onChange={e=>setProjForm((f:any)=>({...f,name:e.target.value}))} placeholder="e.g. MOT Upgrade – Kottathara"/></FormGroup>

@@ -7,6 +7,7 @@ import { useWorkspace, TASK_CATEGORIES, REMINDER_CATS, PRIORITIES, TASK_STATUSES
 // notifications passed as props from App.tsx
 import { colors as C_, space, radius as R, T, type as TY } from '../design/tokens'
 import { Sheet, FormGroup, Badge, EmptyState } from '../design/components'
+import { Ico, CalendarDaysIcon, FolderIcon, ExclamationTriangleIcon, BellAlertIcon, XMarkIcon, CheckCircleIcon } from '../design/icons'
 import { fmtMoney, smartDate } from '../design/business'
 import { supabase } from '../lib/supabase'
 import type { User, UserRole } from '../types'
@@ -78,8 +79,8 @@ export function WorkspacePage({ user, role, ws, notifications, markAllRead, unre
         {/* Quick stats */}
         {(ws.overdueTasks.length > 0 || ws.overdueReminders.length > 0) && (
           <div style={{ display:'flex', gap:space[2], marginBottom:space[4] }}>
-            {ws.overdueTasks.length > 0 && <span style={{ padding:`${space[1]} ${space[2]}`, background:'rgba(220,38,38,.2)', color:'#fca5a5', borderRadius:R.pill, fontSize:TY.sizeXs, fontWeight:700 }}>⚠ {ws.overdueTasks.length} overdue task{ws.overdueTasks.length>1?'s':''}</span>}
-            {ws.overdueReminders.length > 0 && <span style={{ padding:`${space[1]} ${space[2]}`, background:'rgba(217,119,6,.2)', color:'#fcd34d', borderRadius:R.pill, fontSize:TY.sizeXs, fontWeight:700 }}>🔔 {ws.overdueReminders.length} overdue reminder{ws.overdueReminders.length>1?'s':''}</span>}
+            {ws.overdueTasks.length > 0 && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', padding:`${space[1]} ${space[2]}`, background:'rgba(220,38,38,.2)', color:'#fca5a5', borderRadius:R.pill, fontSize:TY.sizeXs, fontWeight:700 }}><Ico icon={ExclamationTriangleIcon} size={14}/>{ws.overdueTasks.length} overdue task{ws.overdueTasks.length>1?'s':''}</span>}
+            {ws.overdueReminders.length > 0 && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', padding:`${space[1]} ${space[2]}`, background:'rgba(217,119,6,.2)', color:'#fcd34d', borderRadius:R.pill, fontSize:TY.sizeXs, fontWeight:700 }}><Ico icon={BellAlertIcon} size={14}/>{ws.overdueReminders.length} overdue reminder{ws.overdueReminders.length>1?'s':''}</span>}
           </div>
         )}
         {/* Tabs */}
@@ -171,13 +172,13 @@ export function WorkspacePage({ user, role, ws, notifications, markAllRead, unre
                           <div style={{ display:'flex', gap:space[2], flexWrap:'wrap', alignItems:'center', marginTop:space[2] }}>
                             {t.assignee && <span style={{ fontSize:TY.sizeSm, color:C.slate }}>→ {t.assignee.full_name}</span>}
                             {t.creator && t.creator.id !== t.assignee?.id && <span style={{ fontSize:TY.sizeSm, color:C.slate }}>by {t.creator.full_name}</span>}
-                            {t.due_date && <span style={{ fontSize:TY.sizeSm, color: isOverdue ? C_.danger : C.slate }}>📅 {smartDate(t.due_date)}{isOverdue ? ' ⚠' : ''}</span>}
-                            {t.project && <span style={{ fontSize:TY.sizeSm, color:C.slate }}>📁 {t.project.name}</span>}
+                            {t.due_date && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:TY.sizeSm, color: isOverdue ? C_.danger : C.slate }}><Ico icon={CalendarDaysIcon} size={14}/>{smartDate(t.due_date)}{isOverdue && <Ico icon={ExclamationTriangleIcon} size={14}/>}</span>}
+                            {t.project && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:TY.sizeSm, color:C.slate }}><Ico icon={FolderIcon} size={14}/>{t.project.name}</span>}
                           </div>
                           <div style={{ display:'flex', gap:space[2], marginTop:space[2] }}>
-                            <button onClick={() => ws.updateTask(t.id, { status:'Completed' })} style={{ ...btnP, height:'32px', flex:1, fontSize:TY.sizeSm }}>✓ Complete</button>
+                            <button onClick={() => ws.updateTask(t.id, { status:'Completed' })} style={{ ...btnP, height:'32px', flex:1, fontSize:TY.sizeSm , display:'flex', alignItems:'center', gap:'4px' }}>Complete</button>
                             <button onClick={() => { setForm({ ...t, due_date:t.due_date??'', project_id:t.project_id??'', assigned_to:t.assigned_to??'' }); setSheet('task-edit-'+t.id) }} style={{ ...btnG, height:'32px', fontSize:TY.sizeSm }}>Edit</button>
-                            <button onClick={() => { if(confirm('Delete task?')) ws.deleteTask(t.id) }} style={{ ...btnD, height:'32px' }}>✕</button>
+                            <button onClick={() => { if(confirm('Delete task?')) ws.deleteTask(t.id) }} style={{ ...btnD, height:'32px' , display:'flex', alignItems:'center', justifyContent:'center' }}><Ico icon={XMarkIcon} size={16}/></button>
                           </div>
                         </div>
                       )
@@ -198,7 +199,7 @@ export function WorkspacePage({ user, role, ws, notifications, markAllRead, unre
                         <div style={{ fontSize:TY.sizeLg, fontWeight:TY.weightMedium, textDecoration:'line-through', color:C.slate, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.title}</div>
                         <div style={{ fontSize:TY.sizeSm, color:C.slate }}>{t.completed_at ? smartDate(t.completed_at, 'ago') : ''}</div>
                       </div>
-                      <button onClick={() => { if(confirm('Delete?')) ws.deleteTask(t.id) }} style={{ ...btnD, height:'28px', fontSize:TY.sizeSm, marginLeft:space[2] }}>✕</button>
+                      <button onClick={() => { if(confirm('Delete?')) ws.deleteTask(t.id) }} style={{ ...btnD, height:'28px', fontSize:TY.sizeSm, marginLeft:space[2] , display:'flex', alignItems:'center', justifyContent:'center' }}><Ico icon={XMarkIcon} size={16}/></button>
                     </div>
                   ))}
                 </div>
@@ -252,7 +253,7 @@ export function WorkspacePage({ user, role, ws, notifications, markAllRead, unre
             {/* Overdue */}
             {ws.overdueReminders.length > 0 && (
               <div style={{ marginBottom:space[4] }}>
-                <div style={{ fontSize:TY.sizeXs, fontWeight:TY.weightBold, color:C_.danger, textTransform:'uppercase', letterSpacing:TY.trackingWide, marginBottom:space[2] }}>⚠ Overdue · {ws.overdueReminders.length}</div>
+                <div style={{ fontSize:TY.sizeXs, fontWeight:TY.weightBold, color:C_.danger, textTransform:'uppercase', letterSpacing:TY.trackingWide, marginBottom:space[2] }}>Overdue · {ws.overdueReminders.length}</div>
                 <div style={{ ...card, border:`1px solid ${C_.danger}` }}>
                   {ws.overdueReminders.map((r: any, i: number) => <ReminderRow key={r.id} r={r} i={i} total={ws.overdueReminders.length} ws={ws} setForm={setForm} setSheet={setSheet} user={user}/>)}
                 </div>
@@ -290,7 +291,7 @@ export function WorkspacePage({ user, role, ws, notifications, markAllRead, unre
                         <div style={{ fontSize:TY.sizeLg, fontWeight:TY.weightMedium, textDecoration:'line-through', color:C.slate }}>{r.title}</div>
                         <div style={{ fontSize:TY.sizeSm, color:C.slate }}>{r.completed_at ? smartDate(r.completed_at,'ago') : ''}</div>
                       </div>
-                      <button onClick={() => ws.deleteReminder(r.id)} style={{ ...btnD, height:'28px' }}>✕</button>
+                      <button onClick={() => ws.deleteReminder(r.id)} style={{ ...btnD, height:'28px' , display:'flex', alignItems:'center', justifyContent:'center' }}><Ico icon={XMarkIcon} size={16}/></button>
                     </div>
                   ))}
                 </div>
@@ -375,7 +376,7 @@ function ReminderRow({ r, i, total, ws, setForm, setSheet, user }: any) {
           </div>
           {r.description && <div style={{ fontSize:TY.sizeSm, color:C_.textSecondary, marginTop:'2px' }}>{r.description}</div>}
           <div style={{ display:'flex', gap:space[2], marginTop:space[1], flexWrap:'wrap', alignItems:'center' }}>
-            <span style={{ fontSize:TY.sizeSm, color:C_.textSecondary }}>📅 {smartDate(r.due_date)}</span>
+            <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', fontSize:TY.sizeSm, color:C_.textSecondary }}><Ico icon={CalendarDaysIcon} size={14}/>{smartDate(r.due_date)}</span>
             <span style={{ padding:`1px ${space[2]}`, fontSize:TY.sizeXs, fontWeight:TY.weightBold, background:pbg, color:pc, borderRadius:'99px' }}>{r.priority}</span>
             {r.repeat_type !== 'None' && <span style={{ fontSize:TY.sizeSm, color:C_.info }}>{r.repeat_type}</span>}
             {r.category !== 'General' && <span style={{ fontSize:TY.sizeSm, color:C_.textSecondary }}>{r.category}</span>}
@@ -384,9 +385,9 @@ function ReminderRow({ r, i, total, ws, setForm, setSheet, user }: any) {
         </div>
       </div>
       <div style={{ display:'flex', gap:space[2], marginTop:space[2] }}>
-        <button onClick={() => ws.completeReminder(r.id)} style={{ ...T.btnPrimary, height:'32px', flex:1, fontSize:TY.sizeSm }}>✓ Done</button>
+        <button onClick={() => ws.completeReminder(r.id)} style={{ ...T.btnPrimary, height:'32px', flex:1, fontSize:TY.sizeSm , display:'flex', alignItems:'center', gap:'4px' }}>Done</button>
         <button onClick={() => { setForm({ ...r, due_date:r.due_date, assigned_to:r.assigned_to??'' }); setSheet('reminder-edit-'+r.id) }} style={{ ...T.btnOutline, height:'32px', fontSize:TY.sizeSm }}>Edit</button>
-        <button onClick={() => { if(confirm('Delete?')) ws.deleteReminder(r.id) }} style={{ ...T.btnDanger, height:'32px' }}>✕</button>
+        <button onClick={() => { if(confirm('Delete?')) ws.deleteReminder(r.id) }} style={{ ...T.btnDanger, height:'32px' , display:'flex', alignItems:'center', justifyContent:'center' }}><Ico icon={XMarkIcon} size={16}/></button>
       </div>
     </div>
   )

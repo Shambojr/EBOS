@@ -4,6 +4,7 @@
 // Import from here; never duplicate in page files.
 // ════════════════════════════════════════════════════════════
 import React from 'react'
+import { Ico, STAGE_ICON_MAP, CalendarDaysIcon, MapPinIcon, ExclamationTriangleIcon, ClipboardDocumentListIcon } from './icons'
 import { colors, space, radius, shadow, type as T_, text, motion, size, T } from './tokens'
 import { fmtMoney, smartDate, daysLeft, getStatus, projectHealth, HEALTH_LABEL, initials as bInitials } from './business'
 
@@ -204,7 +205,7 @@ export function SyncIndicator({ status, pending }: { status: string; pending: nu
     online:  [colors.success, '● Online'],
     offline: [colors.danger,  '● Offline'],
     syncing: [colors.warning, '↻ Syncing…'],
-    failed:  [colors.danger,  `⚠ ${pending} queued`],
+    failed:  [colors.danger,  `${pending} queued`],
   }
   const [color, label] = map[status] ?? map.online
   return <span style={{ fontSize: T_.sizeXs, fontWeight: T_.weightSemibold, color, letterSpacing: '0.02em' }}>{label}</span>
@@ -625,11 +626,7 @@ interface ProjectHealthCardProps {
   showEdit?: boolean
 }
 
-const STAGE_ICONS: Record<string, string> = {
-  Tender:'📋', Planning:'📐', Procurement:'🛒', 'Site Prep':'🚧', Foundation:'🏗',
-  'Civil Works':'🧱', MGPS:'🔵', HVAC:'❄️', Electrical:'⚡', Plumbing:'🔧',
-  Finishing:'🎨', Testing:'🧪', Commissioning:'⚙️', Handover:'🏁',
-}
+// Stage icons now use STAGE_ICON_MAP from ./icons
 
 export function ProjectHealthCard({ project: p, onClick, onEdit, showEdit }: ProjectHealthCardProps) {
   const h = projectHealth(p)
@@ -654,9 +651,9 @@ export function ProjectHealthCard({ project: p, onClick, onEdit, showEdit }: Pro
       {/* Body */}
       <div style={{ padding: `${space[3]} ${space[4]}` }} onClick={onClick}>
         <div style={{ display: 'flex', gap: space[3], flexWrap: 'wrap', marginBottom: space[3] }}>
-          {p.location && <span style={{ fontSize: T_.sizeSm, color: colors.textSecondary }}>📍 {p.location}</span>}
-          {p.end_date && <span style={{ fontSize: T_.sizeSm, color: colors.textSecondary }}>📅 {smartDate(p.end_date)}</span>}
-          {p.stage && <span style={{ fontSize: T_.sizeSm, color: colors.textSecondary }}>{STAGE_ICONS[p.stage] || ''} {p.stage}</span>}
+          {p.location && <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', fontSize: T_.sizeSm, color: colors.textSecondary }}><Ico icon={MapPinIcon} size={14}/>{p.location}</span>}
+          {p.end_date && <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', fontSize: T_.sizeSm, color: colors.textSecondary }}><Ico icon={CalendarDaysIcon} size={14}/>{smartDate(p.end_date)}</span>}
+          {p.stage && <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', fontSize: T_.sizeSm, color: colors.textSecondary }}><Ico icon={STAGE_ICON_MAP[p.stage] || ClipboardDocumentListIcon} size={14}/>{p.stage}</span>}
         </div>
         <ProgressBar value={p.progress} color={healthColor}/>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: space[1], fontSize: T_.sizeSm, color: colors.textSecondary }}>
@@ -667,7 +664,7 @@ export function ProjectHealthCard({ project: p, onClick, onEdit, showEdit }: Pro
       {/* Edit footer */}
       {showEdit && onEdit && (
         <div style={{ padding: `0 ${space[4]} ${space[3]}` }}>
-          <button onClick={e => { e.stopPropagation(); onEdit() }} style={{ ...T.btnSecondary, width: '100%', height: '36px', fontSize: T_.sizeSm }}>✎ Edit Project</button>
+          <button onClick={e => { e.stopPropagation(); onEdit() }} style={{ ...T.btnSecondary, width: '100%', height: '36px', fontSize: T_.sizeSm }}>Edit Project</button>
         </div>
       )}
     </div>
