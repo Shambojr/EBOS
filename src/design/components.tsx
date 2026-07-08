@@ -71,7 +71,7 @@ export function Sheet({ title, children, onClose, footer }: SheetProps) {
           <button onClick={onClose} style={{
             width: '34px', height: '34px', borderRadius: radius.md, display:'flex', alignItems:'center', justifyContent:'center',
             background: colors.bgMuted, border: 'none', color: colors.textSecondary, fontSize: '16px', cursor:'pointer', fontWeight: 600,
-          }}>✕</button>
+          }}>×</button>
         </div>
         {/* Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: space[5], WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>{children}</div>

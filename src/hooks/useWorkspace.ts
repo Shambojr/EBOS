@@ -217,7 +217,7 @@ async function escalateOverdueReminders(user: User, reminders: any[]) {
     // Notify all directors
     const notifs = directors.map((d: any) => ({
       user_id: d.id,
-      title: `⚠ Overdue Reminder`,
+      title: 'Overdue Reminder',
       message: `"${r.title}" was due ${r.due_date} and has not been completed.`,
       type: 'reminder',
       is_read: false,
