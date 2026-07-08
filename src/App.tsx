@@ -503,10 +503,8 @@ function InnerApp() {
 function App() {
   const { user, loading } = useAuth()
   if (loading) return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#ffffff', fontFamily:"'Inter',system-ui,sans-serif" }}>
-      <div style={{ textAlign:'center' }}>
-        <img src={LOGO_NAVY} alt="Ease Builders" style={{ height:'72px', width:'auto', display:'block', margin:'0 auto', mixBlendMode:'multiply' }}/>
-      </div>
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#1e3a4a', fontFamily:"'Inter',system-ui,sans-serif" }}>
+      <img src={LOGO_NAVY} alt="Ease Builders" style={{ width:'65%', maxWidth:'280px', display:'block', filter:'brightness(0) invert(1)' }}/>
     </div>
   )
   if (!user) return <LoginPage/>
