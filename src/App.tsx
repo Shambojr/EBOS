@@ -161,34 +161,38 @@ function InnerApp() {
     activity: <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
     more:     <svg viewBox="0 0 24 24" style={{width:22,height:22,stroke:'currentColor',strokeWidth:1.8,fill:'none',strokeLinecap:'round',strokeLinejoin:'round'}}><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>,
   }
-  const BottomNav = () => (
-    <nav style={{ height:'64px', background:'#fff', borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center', paddingBottom:'env(safe-area-inset-bottom,0px)', position:'sticky', bottom:0, zIndex:30, flexShrink:0 }}>
-      {navTabs.map((t, i) => {
-        if (i === Math.floor(navTabs.length / 2)) {
-          return (
-            <div key="fab" style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center' }}>
-              <button
-                onClick={() => view === 'project' ? setSheet('quick-add') : setSheet('new-project')}
-                style={{ width:'50px', height:'50px', background: C.navy, color:'#fff', borderRadius:'16px', border:'none', fontSize:'24px', cursor:'pointer', marginTop:'-18px', boxShadow:'0 4px 16px rgba(30,58,74,.35)', display:'flex', alignItems:'center', justifyContent:'center', transition:'transform 0.12s ease' }}
-                onTouchStart={e=>(e.currentTarget.style.transform='scale(.93)')}
-                onTouchEnd={e=>(e.currentTarget.style.transform='scale(1)')}
-              >＋</button>
-            </div>
-          )
-        }
-        const isActive = view === t.key
-        return (
-          <div key={t.key} onClick={() => setView(t.key as any)}
-            style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px', padding:'6px 0', cursor:'pointer', WebkitTapHighlightColor:'transparent' as any }}>
-            <div style={{ padding:'4px 10px', borderRadius:'10px', background: isActive ? C.mist : 'transparent', transition:'background 0.15s ease', color: isActive ? C.navy : C.slate }}>
-              {NAV_ICONS[t.key]}
-            </div>
-            <span style={{ fontSize:'10px', fontWeight: isActive ? 700 : 500, color: isActive ? C.navy : C.slate, transition:'color 0.15s ease' }}>{t.label}</span>
+  const BottomNav = () => {
+    // Insert FAB between left and right tab groups — never replaces a real tab
+    const mid = Math.floor(navTabs.length / 2)
+    const leftTabs  = navTabs.slice(0, mid)
+    const rightTabs = navTabs.slice(mid)
+    const NavTab = ({ t }: { t: typeof navTabs[0] }) => {
+      const isActive = view === t.key
+      return (
+        <div onClick={() => setView(t.key as any)}
+          style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px', padding:'6px 0', cursor:'pointer', WebkitTapHighlightColor:'transparent' as any }}>
+          <div style={{ padding:'4px 8px', borderRadius:'10px', background: isActive ? C.mist : 'transparent', transition:'background 0.15s ease', color: isActive ? C.navy : C.slate }}>
+            {NAV_ICONS[t.key]}
           </div>
-        )
-      })}
-    </nav>
-  )
+          <span style={{ fontSize:'9px', fontWeight: isActive ? 700 : 500, color: isActive ? C.navy : C.slate, transition:'color 0.15s ease' }}>{t.label}</span>
+        </div>
+      )
+    }
+    return (
+      <nav style={{ height:'64px', background:'#fff', borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center', paddingBottom:'env(safe-area-inset-bottom,0px)', position:'sticky', bottom:0, zIndex:30, flexShrink:0 }}>
+        {leftTabs.map(t => <NavTab key={t.key} t={t}/>)}
+        <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center' }}>
+          <button
+            onClick={() => view === 'project' ? setSheet('quick-add') : setSheet('new-project')}
+            style={{ width:'46px', height:'46px', background: C.navy, color:'#fff', borderRadius:'14px', border:'none', fontSize:'22px', cursor:'pointer', marginTop:'-14px', boxShadow:'0 4px 16px rgba(30,58,74,.35)', display:'flex', alignItems:'center', justifyContent:'center', transition:'transform 0.12s ease' }}
+            onTouchStart={e=>(e.currentTarget.style.transform='scale(.93)')}
+            onTouchEnd={e=>(e.currentTarget.style.transform='scale(1)')}
+          >＋</button>
+        </div>
+        {rightTabs.map(t => <NavTab key={t.key} t={t}/>)}
+      </nav>
+    )
+  }
 
   // ── NOTIFICATION PANEL ─────────────────────────────────────
   const NotifPanel = () => showNotifs ? (
