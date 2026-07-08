@@ -3,7 +3,7 @@
 // Inbox · Tasks · Reminders · Activity
 // ════════════════════════════════════════════════════════════
 import { useState } from 'react'
-import { useWorkspace, TASK_CATEGORIES, REMINDER_CATS, PRIORITIES, TASK_STATUSES } from '../hooks/useWorkspace'
+import { TASK_CATEGORIES, REMINDER_CATS, PRIORITIES, TASK_STATUSES } from '../hooks/useWorkspace'
 import { useNotifications } from '../hooks/useNotifications'
 import { colors as C_, space, radius as R, T, type as TY } from '../design/tokens'
 import { Sheet, FormGroup, Badge, EmptyState } from '../design/components'
@@ -39,12 +39,12 @@ const PRIORITY_COLOR: Record<string,[string,string]> = {
 interface WorkspacePageProps {
   user: User
   role: UserRole
-  users: User[]  // all team members for assignment
+  ws: ReturnType<typeof useWorkspace>
 }
 
 // ════════════════════════════════════════════════════════════
-export function WorkspacePage({ user, role, users }: WorkspacePageProps) {
-  const ws = useWorkspace(user)
+export function WorkspacePage({ user, role, ws }: WorkspacePageProps) {
+  // ws received as prop from App.tsx (single instance, no duplicate channel)
   const { notifications, markAllRead } = useNotifications(user.id)
   const [tab,   setTab]   = useState<'inbox'|'tasks'|'reminders'|'activity'>('inbox')
   const [sheet, setSheet] = useState<string | null>(null)
@@ -217,8 +217,7 @@ export function WorkspacePage({ user, role, users }: WorkspacePageProps) {
                 <FormGroup label="Description"><textarea style={{...fieldStyle,minHeight:'60px',resize:'vertical'}} value={gv('description')} onChange={e=>sf('description',e.target.value)}/></FormGroup>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:space[3] }}>
                   <FormGroup label="Assign To"><select style={{...fieldStyle,appearance:'none'}} value={gv('assigned_to')} onChange={e=>sf('assigned_to',e.target.value)}>
-                    <option value="">— Myself</option>
-                    {users.filter(u=>u.id!==user.id).map(u=><option key={u.id} value={u.id}>{u.full_name}</option>)}
+                    <option value={user.id}>{user.full_name} (Me)</option>
                   </select></FormGroup>
                   <FormGroup label="Priority"><select style={{...fieldStyle,appearance:'none'}} value={gv('priority')||'Normal'} onChange={e=>sf('priority',e.target.value)}>{PRIORITIES.map(p=><option key={p}>{p}</option>)}</select></FormGroup>
                   <FormGroup label="Category"><select style={{...fieldStyle,appearance:'none'}} value={gv('category')||'General'} onChange={e=>sf('category',e.target.value)}>{TASK_CATEGORIES.map(c=><option key={c}>{c}</option>)}</select></FormGroup>
@@ -316,8 +315,7 @@ export function WorkspacePage({ user, role, users }: WorkspacePageProps) {
                 </div>
                 <FormGroup label="Assign To">
                   <select style={{...fieldStyle,appearance:'none'}} value={gv('assigned_to')||user.id} onChange={e=>sf('assigned_to',e.target.value)}>
-                    <option value={user.id}>Myself ({user.full_name})</option>
-                    {users.filter(u=>u.id!==user.id).map(u=><option key={u.id} value={u.id}>{u.full_name}</option>)}
+                    <option value={user.id}>{user.full_name} (Me)</option>
                   </select>
                 </FormGroup>
               </Sheet>
