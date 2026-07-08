@@ -218,8 +218,7 @@ export function WorkspacePage({ user, role, ws, notifications, markAllRead, unre
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:space[3] }}>
                   <FormGroup label="Assign To"><select style={{...fieldStyle,appearance:'none'}} value={gv('assigned_to')} onChange={e=>sf('assigned_to',e.target.value)}>
                     <option value="">— Unassigned</option>
-                    <option value={user.id}>{user.full_name} (Me)</option>
-                    {ws.teamUsers.filter((u: any) => u.id !== user.id).map((u: any) => <option key={u.id} value={u.id}>{u.full_name} ({u.role.replace(/_/g,' ')})</option>)}
+                    {ws.teamUsers.map((u: any) => <option key={u.id} value={u.id}>{u.id === user.id ? `${u.full_name} (Me)` : `${u.full_name} (${u.role.replace(/_/g,' ')})`}</option>)}
                     {ws.teamUsers.filter((u: any) => u.id !== user.id).map((u: any) => <option key={u.id} value={u.id}>{u.full_name} ({u.role.replace(/_/g,' ')})</option>)}
                   </select></FormGroup>
                   <FormGroup label="Priority"><select style={{...fieldStyle,appearance:'none'}} value={gv('priority')||'Normal'} onChange={e=>sf('priority',e.target.value)}>{PRIORITIES.map(p=><option key={p}>{p}</option>)}</select></FormGroup>
@@ -319,8 +318,7 @@ export function WorkspacePage({ user, role, ws, notifications, markAllRead, unre
                 <FormGroup label="Assign To">
                   <select style={{...fieldStyle,appearance:'none'}} value={gv('assigned_to')||user.id} onChange={e=>sf('assigned_to',e.target.value)}>
                     <option value="">— Unassigned</option>
-                    <option value={user.id}>{user.full_name} (Me)</option>
-                    {ws.teamUsers.filter((u: any) => u.id !== user.id).map((u: any) => <option key={u.id} value={u.id}>{u.full_name} ({u.role.replace(/_/g,' ')})</option>)}
+                    {ws.teamUsers.map((u: any) => <option key={u.id} value={u.id}>{u.id === user.id ? `${u.full_name} (Me)` : `${u.full_name} (${u.role.replace(/_/g,' ')})`}</option>)}
                     {ws.teamUsers.filter((u: any) => u.id !== user.id).map((u: any) => <option key={u.id} value={u.id}>{u.full_name} ({u.role.replace(/_/g,' ')})</option>)}
                   </select>
                 </FormGroup>
