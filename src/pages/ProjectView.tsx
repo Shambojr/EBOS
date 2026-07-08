@@ -115,42 +115,45 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
   return (
     <div style={{ flex:1, overflowY:'auto', paddingBottom:'80px' }}>
 
-      {/* ── Hero Section ──────────────────────────────────── */}
-      <div style={{ background: C.navy, padding:`${space[4]} ${space[4]} 0` }}>
-        {/* Type + Health */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: space[2] }}>
-          <span style={{ fontSize: TY.sizeXs, fontWeight: TY.weightSemibold, letterSpacing: TY.trackingWidest, textTransform:'uppercase', color:'rgba(255,255,255,.45)' }}>
-            {project.type || 'Construction Project'}
+      {/* ── Hero Section — compact, premium ─────────────────── */}
+      <div style={{ background: C.navy, padding:`${space[3]} ${space[4]} 0` }}>
+        {/* Type + Health on same row */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:space[1] }}>
+          <span style={{ fontSize:'10px', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'rgba(255,255,255,.4)' }}>
+            {project.type || 'Construction'}
           </span>
-          <span style={{ padding:`${space[1]} ${space[2]}`, borderRadius: R.pill, fontSize: TY.sizeXs, fontWeight: TY.weightBold, background: health === 'green' ? '#f0fdf4' : health === 'amber' ? '#fffbeb' : '#fef2f2', color: healthColor }}>
+          <span style={{ padding:`2px ${space[2]}`, borderRadius: R.pill, fontSize:'11px', fontWeight:TY.weightBold,
+            background: health === 'green' ? '#f0fdf4' : health === 'amber' ? '#fffbeb' : '#fef2f2', color: healthColor }}>
             {healthLabel}
           </span>
         </div>
-        {/* Name + Client */}
-        <div style={{ fontSize: TY.size3xl, fontWeight: TY.weightBlack, color:'#fff', lineHeight:1.2, letterSpacing:'-0.02em', marginBottom:'3px' }}>
+        {/* Project name — 2 line clamp */}
+        <div style={{ fontSize:'20px', fontWeight:800, color:'#fff', lineHeight:1.25, letterSpacing:'-0.02em', marginBottom:'2px',
+          display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as any, overflow:'hidden' }}>
           {project.name}
         </div>
-        <div style={{ fontSize: TY.sizeSm, color:'rgba(255,255,255,.5)', marginBottom: space[4] }}>
+        {/* Client · Location */}
+        <div style={{ fontSize:'12px', color:'rgba(255,255,255,.45)', marginBottom:space[2] }}>
           {[project.client, project.location].filter(Boolean).join(' · ') || '—'}
         </div>
-        {/* Progress bar */}
-        <div style={{ height:'3px', background:'rgba(255,255,255,.15)', borderRadius: R.pill, overflow:'hidden', marginBottom: space[1] }}>
-          <div style={{ height:'100%', width:`${project.progress}%`, background: health === 'green' ? '#34d399' : health === 'amber' ? '#fbbf24' : '#f87171', borderRadius: R.pill, transition:`width .6s ease` }}/>
+        {/* Slim progress bar */}
+        <div style={{ height:'3px', background:'rgba(255,255,255,.12)', borderRadius: R.pill, overflow:'hidden', marginBottom:'3px' }}>
+          <div style={{ height:'100%', width:`${project.progress}%`, background: health === 'green' ? '#34d399' : health === 'amber' ? '#fbbf24' : '#f87171', borderRadius: R.pill, transition:'width .6s ease' }}/>
         </div>
-        <div style={{ display:'flex', justifyContent:'space-between', marginBottom: space[4] }}>
-          <span style={{ fontSize: TY.sizeSm, color:'rgba(255,255,255,.5)' }}>{project.progress}% complete</span>
-          {dl !== null && <span style={{ fontSize: TY.sizeSm, color: dl < 0 ? '#f87171' : dl < 14 ? '#fbbf24' : 'rgba(255,255,255,.5)' }}>{dl < 0 ? `${Math.abs(dl)}d overdue` : dl === 0 ? 'Due today' : `${dl}d left`}</span>}
+        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:space[3] }}>
+          <span style={{ fontSize:'10px', color:'rgba(255,255,255,.4)' }}>{project.progress}% complete</span>
+          {dl !== null && <span style={{ fontSize:'10px', color: dl < 0 ? '#f87171' : dl < 14 ? '#fbbf24' : 'rgba(255,255,255,.4)' }}>{dl < 0 ? `${Math.abs(dl)}d overdue` : dl === 0 ? 'Due today' : `${dl}d left`}</span>}
         </div>
-        {/* Tab bar inside hero */}
+        {/* Tab bar */}
         <div data-no-swipe="true" style={{ display:'flex', overflowX:'auto', WebkitOverflowScrolling:'touch', marginBottom:'-1px' }}>
           {allowedTabs.filter(t => TAB_LABELS[t]).map(t => (
             <button key={t} onClick={() => setTab(t)} style={{
-              padding:`10px 14px`, border:'none', background:'transparent',
-              fontSize: TY.sizeSm, fontWeight: tab===t ? TY.weightBold : TY.weightMedium,
-              color: tab===t ? '#fff' : 'rgba(255,255,255,.45)',
+              padding:`8px 12px`, border:'none', background:'transparent',
+              fontSize:'12px', fontWeight: tab===t ? 700 : 500,
+              color: tab===t ? '#fff' : 'rgba(255,255,255,.4)',
               borderBottom:`2px solid ${tab===t ? '#fff' : 'transparent'}`,
               whiteSpace:'nowrap', cursor:'pointer', fontFamily:'inherit',
-              transition:`all .15s ease`, marginBottom:'-1px',
+              transition:'all .15s ease', marginBottom:'-1px',
             }}>
               {TAB_LABELS[t]}
             </button>

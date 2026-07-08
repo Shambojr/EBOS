@@ -41,6 +41,19 @@ const PROJ_TYPES = ['MOT (Modular OT)','MGPS','HVAC','Civil','Electrical','Plumb
 const STAGES     = ['Tender','Planning','Procurement','Site Prep','Foundation','Civil Works','MGPS','HVAC','Electrical','Plumbing','Finishing','Testing','Commissioning','Handover']
 const EXP_CATS = ['Materials','Labour','Equipment','Transport','Professional Fees','Subcontract','GST','Misc']
 
+// ── Project type accent colors — subtle identity, never decorative ──
+const TYPE_ACCENT: Record<string, string> = {
+  'Civil':           '#64748b',
+  'MOT (Modular OT)':'#7c3aed',
+  'MGPS':            '#2563eb',
+  'HVAC':            '#7c3aed',
+  'Electrical':      '#ea580c',
+  'Plumbing':        '#0284c7',
+  'Renovation':      '#d97706',
+  'Interior':        '#0d9488',
+  'Combined':        '#1e3a4a',
+}
+
 // ── Design system aliases (consumed from ./design/tokens) ──────
 // C = semantic color shorthand (backwards compatible)
 const C = {
@@ -308,22 +321,30 @@ function InnerApp() {
             {projects.map(p => {
               const h = projectHealth(p)
               return (
-                <div key={p.id} style={{ ...card, marginBottom:'10px', cursor:'pointer' }} onClick={() => goProject(p)}>
-                  <div style={{ height:'4px', background: h==='green'?C.green:h==='amber'?C.amber:C.red }}/>
+                <div key={p.id}
+                onClick={() => goProject(p)}
+                style={{ background:'#fff', borderRadius:'14px', marginBottom:'10px', cursor:'pointer', overflow:'hidden',
+                  boxShadow:'0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04)',
+                  borderLeft:`3px solid ${TYPE_ACCENT[p.type || ''] || C.navy}`,
+                  WebkitTapHighlightColor:'transparent' as any,
+                  transition:'transform .12s ease' }}
+                onTouchStart={e=>(e.currentTarget.style.transform='scale(.985)')}
+                onTouchEnd={e=>(e.currentTarget.style.transform='scale(1)')}>
                   <div style={{ padding:'12px 14px' }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'8px' }}>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</div>
-                        <div style={{ fontSize:'12px', color: C.slate, marginTop:'2px' }}>{p.client} · {p.location}</div>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'6px' }}>
+                      <div style={{ flex:1, minWidth:0, marginRight:'10px' }}>
+                        <div style={{ fontWeight:700, fontSize:'14px', color: C.ink, lineHeight:1.3,
+                          display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as any, overflow:'hidden' }}>{p.name}</div>
+                        <div style={{ fontSize:'11px', color: C.slate, marginTop:'2px' }}>{[p.client, p.location].filter(Boolean).join(' · ')}</div>
                       </div>
                       <HealthBadge h={h}/>
                     </div>
-                    <div style={{ height:'5px', background: C.mist, borderRadius:'99px', overflow:'hidden' }}>
-                      <div style={{ height:'100%', background: h==='green'?C.green:h==='amber'?C.amber:C.red, borderRadius:'99px', width:`${p.progress}%`, transition:'width .5s' }}/>
+                    <div style={{ height:'3px', background: C.mist, borderRadius:'99px', overflow:'hidden', marginBottom:'4px' }}>
+                      <div style={{ height:'100%', background: h==='green'?C_.success:h==='amber'?C_.warning:C_.danger, borderRadius:'99px', width:`${p.progress}%`, transition:'width .6s ease' }}/>
                     </div>
-                    <div style={{ display:'flex', justifyContent:'space-between', marginTop:'4px', fontSize:'11px', color: C.slate }}>
-                      <span>{p.progress}% complete</span>
-                      <span>{p.budget ? fmtCur(p.total_spent ?? 0) + ' / ' + fmtCur(p.budget) : ''}</span>
+                    <div style={{ display:'flex', justifyContent:'space-between', fontSize:'10px', color: C.slate }}>
+                      <span>{p.progress}% · {p.stage || 'In Progress'}</span>
+                      <span>{p.budget ? fmtCur(p.budget) : ''}</span>
                     </div>
                   </div>
                 </div>
@@ -360,36 +381,51 @@ function InnerApp() {
       {projects.map(p => {
         const h = projectHealth(p)
         return (
-          <div key={p.id} style={{ ...card, marginBottom:'12px' }}>
-            <div style={{ height:'4px', background: h==='green'?C.green:h==='amber'?C.amber:C.red }}/>
-            <div onClick={() => goProject(p)} style={{ cursor:'pointer' }}>
-              <div style={{ background: C.navy, padding:'14px 16px' }}>
-                <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'.1em', textTransform:'uppercase', color:'rgba(255,255,255,.45)', marginBottom:'4px' }}>{p.type || 'Construction'}</div>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                  <div>
-                    <div style={{ fontSize:'17px', fontWeight:800, color:'#fff', lineHeight:1.25 }}>{p.name}</div>
-                    <div style={{ fontSize:'12px', color:'rgba(255,255,255,.55)', marginTop:'3px' }}>{p.client || '—'}</div>
+          <div key={p.id}
+            onContextMenu={e => { e.preventDefault(); setProjForm({ ...p }); setEditProjId(p.id); setSheet('edit-project') }}
+            onTouchStart={e=>{
+              const t = setTimeout(() => { setProjForm({ ...p }); setEditProjId(p.id); setSheet('edit-project') }, 600)
+              ;(e.currentTarget as any)._lt = t
+              e.currentTarget.style.transform = 'scale(.98)'
+            }}
+            onTouchEnd={e => { clearTimeout((e.currentTarget as any)._lt); e.currentTarget.style.transform = 'scale(1)' }}
+            onTouchMove={e => { clearTimeout((e.currentTarget as any)._lt); e.currentTarget.style.transform = 'scale(1)' }}
+            onClick={() => goProject(p)}
+            style={{ background:'#fff', borderRadius:'16px', marginBottom:'14px', cursor:'pointer', overflow:'hidden',
+              boxShadow:'0 1px 4px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04)',
+              WebkitTapHighlightColor:'transparent' as any,
+              transition:'transform .12s ease' }}>
+            <div style={{ display:'flex' }}>
+              <div style={{ width:'3px', background: TYPE_ACCENT[p.type || ''] || C.navy, flexShrink:0 }}/>
+              <div style={{ flex:1, padding:'16px 16px 14px' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'8px', gap:'10px' }}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:'11px', fontWeight:600, letterSpacing:'.06em', textTransform:'uppercase' as any,
+                      color: TYPE_ACCENT[p.type || ''] || C.slate, marginBottom:'3px', opacity:0.8 }}>
+                      {p.type || 'Construction'}
+                    </div>
+                    <div style={{ fontSize:'16px', fontWeight:800, color: C.ink, lineHeight:1.3, letterSpacing:'-0.01em',
+                      display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as any, overflow:'hidden' }}>
+                      {p.name}
+                    </div>
+                    <div style={{ fontSize:'12px', color: C.slate, marginTop:'3px' }}>
+                      {[p.client, p.location].filter(Boolean).join(' · ') || '—'}
+                    </div>
                   </div>
                   <HealthBadge h={h}/>
                 </div>
-              </div>
-              <div style={{ padding:'14px 16px' }}>
-                <div style={{ display:'flex', gap:'10px', flexWrap:'wrap', marginBottom:'12px' }}>
-                  <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', fontSize:'12px', color: C.slate }}><Ico icon={MapPinIcon} size={14}/>{p.location}</span>
-                  <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', fontSize:'12px', color: C.slate }}><Ico icon={CalendarDaysIcon} size={14}/>{fmtDate(p.end_date)}</span>
-                  {p.stage && <span style={{ fontSize:'12px', color: C.slate }}>{p.stage}</span>}
+                <div style={{ height:'3px', background: C.mist, borderRadius:'99px', overflow:'hidden', marginBottom:'5px' }}>
+                  <div style={{ height:'100%', background: h==='green'?C_.success:h==='amber'?C_.warning:C_.danger,
+                    borderRadius:'99px', width:`${p.progress}%`, transition:'width .6s ease' }}/>
                 </div>
-                <div style={{ height:'5px', background: C.mist, borderRadius:'99px', overflow:'hidden', marginBottom:'6px' }}>
-                  <div style={{ height:'100%', background: h==='green'?C.green:h==='amber'?C.amber:C.red, borderRadius:'99px', width:`${p.progress}%` }}/>
-                </div>
-                <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color: C.slate }}>
-                  <span>{p.progress}% complete</span>
-                  {p.budget && <span>{fmtCur(p.total_spent ?? 0)} of {fmtCur(p.budget)}</span>}
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:'11px', color: C.slate }}>
+                  <span>{p.progress}% complete{p.stage ? ` · ${p.stage}` : ''}</span>
+                  <span style={{ display:'flex', gap:'8px', alignItems:'center' }}>
+                    {p.end_date && <span style={{ display:'inline-flex', alignItems:'center', gap:'2px' }}><Ico icon={CalendarDaysIcon} size={11}/>{fmtDate(p.end_date)}</span>}
+                    {p.budget && <span>{fmtCur(p.budget)}</span>}
+                  </span>
                 </div>
               </div>
-            </div>
-            <div style={{ padding:'0 16px 14px' }}>
-              <button onClick={() => { setProjForm({ ...p }); setEditProjId(p.id); setSheet('edit-project') }} style={{ ...btnGhost, width:'100%', justifyContent:'center' }}>Edit Project</button>
             </div>
           </div>
         )
