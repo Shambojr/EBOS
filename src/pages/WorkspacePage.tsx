@@ -3,7 +3,7 @@
 // Inbox · Tasks · Reminders · Activity
 // ════════════════════════════════════════════════════════════
 import { useState } from 'react'
-import { TASK_CATEGORIES, REMINDER_CATS, PRIORITIES, TASK_STATUSES } from '../hooks/useWorkspace'
+import { useWorkspace, TASK_CATEGORIES, REMINDER_CATS, PRIORITIES, TASK_STATUSES } from '../hooks/useWorkspace'
 import { useNotifications } from '../hooks/useNotifications'
 import { colors as C_, space, radius as R, T, type as TY } from '../design/tokens'
 import { Sheet, FormGroup, Badge, EmptyState } from '../design/components'
@@ -150,13 +150,13 @@ export function WorkspacePage({ user, role, ws }: WorkspacePageProps) {
 
             {/* Group by status */}
             {(['Open','In Progress','Waiting'] as const).map(status => {
-              const group = ws.tasks.filter(t => t.status === status)
+              const group = ws.tasks.filter((t: any) => t.status === status)
               if (!group.length) return null
               return (
                 <div key={status} style={{ marginBottom:space[4] }}>
                   <div style={{ fontSize:TY.sizeXs, fontWeight:TY.weightBold, color:C.slate, textTransform:'uppercase', letterSpacing:TY.trackingWide, marginBottom:space[2] }}>{status} · {group.length}</div>
                   <div style={{ ...card }}>
-                    {group.map((t, i) => {
+                    {group.map((t: any, i: number) => {
                       const isOverdue = t.due_date && t.due_date < todayStr
                       const [pbg, pc] = PRIORITY_COLOR[t.priority] ?? PRIORITY_COLOR.Normal
                       return (
@@ -188,11 +188,11 @@ export function WorkspacePage({ user, role, ws }: WorkspacePageProps) {
             })}
 
             {/* Completed */}
-            {ws.tasks.filter(t=>t.status==='Completed').length > 0 && (
+            {ws.tasks.filter((t: any)=>t.status==='Completed').length > 0 && (
               <div>
-                <div style={{ fontSize:TY.sizeXs, fontWeight:TY.weightBold, color:C_.success, textTransform:'uppercase', letterSpacing:TY.trackingWide, marginBottom:space[2] }}>Completed · {ws.tasks.filter(t=>t.status==='Completed').length}</div>
+                <div style={{ fontSize:TY.sizeXs, fontWeight:TY.weightBold, color:C_.success, textTransform:'uppercase', letterSpacing:TY.trackingWide, marginBottom:space[2] }}>Completed · {ws.tasks.filter((t: any)=>t.status==='Completed').length}</div>
                 <div style={{ ...card, opacity:0.6 }}>
-                  {ws.tasks.filter(t=>t.status==='Completed').slice(0,5).map((t,i,arr) => (
+                  {ws.tasks.filter((t: any)=>t.status==='Completed').slice(0,5).map((t: any, i: number, arr: any[]) => (
                     <div key={t.id} style={{ padding:`${space[3]} ${space[4]}`, borderBottom: i<arr.length-1?`1px solid ${C.border}`:'none', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ fontSize:TY.sizeLg, fontWeight:TY.weightMedium, textDecoration:'line-through', color:C.slate, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.title}</div>
@@ -238,7 +238,7 @@ export function WorkspacePage({ user, role, ws }: WorkspacePageProps) {
               <button style={btnP} onClick={() => { setForm({ priority:'Normal', category:'General', repeat_type:'None', due_date:today() }); setSheet('reminder') }}>＋ Add Reminder</button>
             </div>
 
-            {!ws.reminders.filter(r=>!r.is_complete).length && !ws.reminders.filter(r=>r.is_complete).length && (
+            {!ws.reminders.filter((r: any)=>!r.is_complete).length && !ws.reminders.filter((r: any)=>r.is_complete).length && (
               <EmptyState
                 icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>}
                 title="No Reminders"
@@ -253,7 +253,7 @@ export function WorkspacePage({ user, role, ws }: WorkspacePageProps) {
               <div style={{ marginBottom:space[4] }}>
                 <div style={{ fontSize:TY.sizeXs, fontWeight:TY.weightBold, color:C_.danger, textTransform:'uppercase', letterSpacing:TY.trackingWide, marginBottom:space[2] }}>⚠ Overdue · {ws.overdueReminders.length}</div>
                 <div style={{ ...card, border:`1px solid ${C_.danger}` }}>
-                  {ws.overdueReminders.map((r,i) => <ReminderRow key={r.id} r={r} i={i} total={ws.overdueReminders.length} ws={ws} setForm={setForm} setSheet={setSheet} user={user}/>)}
+                  {ws.overdueReminders.map((r: any, i: number) => <ReminderRow key={r.id} r={r} i={i} total={ws.overdueReminders.length} ws={ws} setForm={setForm} setSheet={setSheet} user={user}/>)}
                 </div>
               </div>
             )}
@@ -263,7 +263,7 @@ export function WorkspacePage({ user, role, ws }: WorkspacePageProps) {
               <div style={{ marginBottom:space[4] }}>
                 <div style={{ fontSize:TY.sizeXs, fontWeight:TY.weightBold, color:C_.warning, textTransform:'uppercase', letterSpacing:TY.trackingWide, marginBottom:space[2] }}>Due Today · {ws.todayReminders.length}</div>
                 <div style={{ ...card, border:`1px solid ${C_.warning}` }}>
-                  {ws.todayReminders.map((r,i) => <ReminderRow key={r.id} r={r} i={i} total={ws.todayReminders.length} ws={ws} setForm={setForm} setSheet={setSheet} user={user}/>)}
+                  {ws.todayReminders.map((r: any, i: number) => <ReminderRow key={r.id} r={r} i={i} total={ws.todayReminders.length} ws={ws} setForm={setForm} setSheet={setSheet} user={user}/>)}
                 </div>
               </div>
             )}
@@ -273,17 +273,17 @@ export function WorkspacePage({ user, role, ws }: WorkspacePageProps) {
               <div style={{ marginBottom:space[4] }}>
                 <div style={{ fontSize:TY.sizeXs, fontWeight:TY.weightBold, color:C.slate, textTransform:'uppercase', letterSpacing:TY.trackingWide, marginBottom:space[2] }}>Upcoming · {ws.upcomingReminders.length}</div>
                 <div style={{ ...card }}>
-                  {ws.upcomingReminders.map((r,i) => <ReminderRow key={r.id} r={r} i={i} total={ws.upcomingReminders.length} ws={ws} setForm={setForm} setSheet={setSheet} user={user}/>)}
+                  {ws.upcomingReminders.map((r: any, i: number) => <ReminderRow key={r.id} r={r} i={i} total={ws.upcomingReminders.length} ws={ws} setForm={setForm} setSheet={setSheet} user={user}/>)}
                 </div>
               </div>
             )}
 
             {/* Completed */}
-            {ws.reminders.filter(r=>r.is_complete).length > 0 && (
+            {ws.reminders.filter((r: any)=>r.is_complete).length > 0 && (
               <div>
-                <div style={{ fontSize:TY.sizeXs, fontWeight:TY.weightBold, color:C_.success, textTransform:'uppercase', letterSpacing:TY.trackingWide, marginBottom:space[2] }}>Done · {ws.reminders.filter(r=>r.is_complete).length}</div>
+                <div style={{ fontSize:TY.sizeXs, fontWeight:TY.weightBold, color:C_.success, textTransform:'uppercase', letterSpacing:TY.trackingWide, marginBottom:space[2] }}>Done · {ws.reminders.filter((r: any)=>r.is_complete).length}</div>
                 <div style={{ ...card, opacity:0.55 }}>
-                  {ws.reminders.filter(r=>r.is_complete).slice(0,5).map((r,i,arr) => (
+                  {ws.reminders.filter((r: any)=>r.is_complete).slice(0,5).map((r: any, i: number, arr: any[]) => (
                     <div key={r.id} style={{ padding:`${space[3]} ${space[4]}`, borderBottom:i<arr.length-1?`1px solid ${C.border}`:'none', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                       <div>
                         <div style={{ fontSize:TY.sizeLg, fontWeight:TY.weightMedium, textDecoration:'line-through', color:C.slate }}>{r.title}</div>
@@ -335,7 +335,7 @@ export function WorkspacePage({ user, role, ws }: WorkspacePageProps) {
                 body="Team activity across all projects and modules will appear here."
               />
             )}
-            {ws.activity.map((a, i) => (
+            {ws.activity.map((a: any, i: number) => (
               <div key={a.id} style={{ display:'flex', gap:space[3], marginBottom:space[3], alignItems:'flex-start' }}>
                 {/* Avatar */}
                 <div style={{ width:'32px', height:'32px', borderRadius:R.md, background:C.navy, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:TY.sizeXs, fontWeight:TY.weightBold, flexShrink:0 }}>
