@@ -458,7 +458,7 @@ function InnerApp() {
         {view === 'home'      && <HomeView/>}
         {view === 'projects'  && <ProjectsView/>}
         {view === 'project'   && activeProject && <ProjectView project={activeProject} tab={tab} setTab={setTab} sheet={sheet} setSheet={setSheet} role={role} user={user!.profile}/>}
-        {view === 'workspace' && <WorkspacePage user={user!.profile} role={role} ws={ws}/>}
+        {view === 'workspace' && <WorkspacePage user={user!.profile} role={role} ws={ws} notifications={notifications} markAllRead={markAllRead} unreadCount={unreadCount}/>}
         {view === 'finance'   && <DirectorOffice currentUser={user!.profile} projects={projects}/>}
         {view === 'more'      && <MoreView/>}
         {view === 'users'     && <><div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'12px 16px' }}><button onClick={()=>setView('more')} style={{ ...btnGhost, fontSize:'13px' }}>← Back</button></div><UserManagementPage/></>}

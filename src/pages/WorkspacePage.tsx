@@ -4,7 +4,7 @@
 // ════════════════════════════════════════════════════════════
 import { useState } from 'react'
 import { useWorkspace, TASK_CATEGORIES, REMINDER_CATS, PRIORITIES, TASK_STATUSES } from '../hooks/useWorkspace'
-import { useNotifications } from '../hooks/useNotifications'
+// notifications passed as props from App.tsx
 import { colors as C_, space, radius as R, T, type as TY } from '../design/tokens'
 import { Sheet, FormGroup, Badge, EmptyState } from '../design/components'
 import { fmtMoney, smartDate } from '../design/business'
@@ -40,12 +40,14 @@ interface WorkspacePageProps {
   user: User
   role: UserRole
   ws: ReturnType<typeof useWorkspace>
+  notifications: any[]
+  markAllRead: () => void
+  unreadCount: number
 }
 
 // ════════════════════════════════════════════════════════════
-export function WorkspacePage({ user, role, ws }: WorkspacePageProps) {
-  // ws received as prop from App.tsx (single instance, no duplicate channel)
-  const { notifications, markAllRead } = useNotifications(user.id)
+export function WorkspacePage({ user, role, ws, notifications, markAllRead, unreadCount }: WorkspacePageProps) {
+  // all data received as props — no hooks called here
   const [tab,   setTab]   = useState<'inbox'|'tasks'|'reminders'|'activity'>('inbox')
   const [sheet, setSheet] = useState<string | null>(null)
   const [form,  setForm]  = useState<any>({})
@@ -54,8 +56,6 @@ export function WorkspacePage({ user, role, ws }: WorkspacePageProps) {
   function gv(k: string) { return form[k] ?? '' }
 
   const todayStr = today()
-  const unreadCount = notifications.filter(n => !n.is_read).length
-
   // ── TAB BAR ───────────────────────────────────────────────
   const TABS = [
     { key:'inbox',     label:'Inbox',     badge: unreadCount },
