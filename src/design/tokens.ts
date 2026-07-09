@@ -143,7 +143,7 @@ export const radius = {
 export const shadow = {
   none:     'none',
   xs:       '0 1px 2px rgba(15,31,42,.04)',
-  sm:       '0 1px 3px rgba(15,31,42,.06), 0 1px 2px rgba(15,31,42,.04)',
+  sm:       '0 2px 8px rgba(15,31,42,.08), 0 1px 3px rgba(15,31,42,.05)',
   md:       '0 4px 6px rgba(15,31,42,.05), 0 2px 4px rgba(15,31,42,.04)',
   lg:       '0 10px 15px rgba(15,31,42,.06), 0 4px 6px rgba(15,31,42,.04)',
   xl:       '0 20px 25px rgba(15,31,42,.07), 0 10px 10px rgba(15,31,42,.04)',

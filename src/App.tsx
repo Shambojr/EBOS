@@ -1,10 +1,11 @@
 // EBOS Site Manager — Stage 3 complete
 import { useState, useEffect, useRef } from 'react'
+import React from 'react'
 import {
   HomeIcon, BuildingOffice2Icon, ClipboardDocumentListIcon, CurrencyRupeeIcon,
   EllipsisHorizontalIcon, CheckIcon, BellIcon, CalendarDaysIcon, MapPinIcon,
   ChevronLeftIcon, ChevronRightIcon, ExclamationTriangleIcon, ArrowRightOnRectangleIcon,
-  UsersIcon, Ico,
+  UsersIcon, CameraIcon, KeyIcon, XMarkIcon, Ico,
 } from './design/icons'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { useProjects } from './hooks/useProjects'
@@ -16,6 +17,8 @@ import { UserManagementPage } from './pages/UserManagementPage'
 import { DirectorOffice } from './pages/DirectorOffice'
 import { ProjectView } from './pages/ProjectView'
 import { WorkspacePage } from './pages/WorkspacePage'
+import { LockScreen } from './pages/LockScreen'
+import { usePinLock } from './hooks/usePinLock'
 import { can, PROJECT_TABS, NAV_TABS } from './lib/rbac'
 import { useProjectData } from './hooks/useProjectData'
 import { supabase } from './lib/supabase'
@@ -97,6 +100,8 @@ function InnerApp() {
 
   const role = user!.profile.role as UserRole
   const navTabs = NAV_TABS[role]
+  const pinLock = usePinLock()
+  const [showPinSetup, setShowPinSetup] = React.useState(false)
 
   const goProject = (p: Project) => { setActiveProject(p); setTab('overview'); setView('project') }
   const goBack = () => { setActiveProject(null); setView('projects') }
@@ -179,34 +184,20 @@ function InnerApp() {
     more:      <Ico icon={EllipsisHorizontalIcon} size={24}/>,
   }
   const BottomNav = () => {
-    // Insert FAB between left and right tab groups — never replaces a real tab
-    const mid = Math.floor(navTabs.length / 2)
-    const leftTabs  = navTabs.slice(0, mid)
-    const rightTabs = navTabs.slice(mid)
-    const NavTab = ({ t }: { t: typeof navTabs[0] }) => {
-      const isActive = view === t.key
-      return (
-        <div onClick={() => setView(t.key as any)}
-          style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px', padding:'6px 0', cursor:'pointer', WebkitTapHighlightColor:'transparent' as any }}>
-          <div style={{ padding:'4px 8px', borderRadius:'10px', background: isActive ? C.mist : 'transparent', transition:'background 0.15s ease', color: isActive ? C.navy : C.slate }}>
-            {NAV_ICONS[t.key]}
-          </div>
-          <span style={{ fontSize:'9px', fontWeight: isActive ? 700 : 500, color: isActive ? C.navy : C.slate, transition:'color 0.15s ease' }}>{t.label}</span>
-        </div>
-      )
-    }
     return (
       <nav style={{ height:'64px', background:'#fff', borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center', paddingBottom:'env(safe-area-inset-bottom,0px)', position:'sticky', bottom:0, zIndex:30, flexShrink:0 }}>
-        {leftTabs.map(t => <NavTab key={t.key} t={t}/>)}
-        <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center' }}>
-          <button
-            onClick={() => view === 'project' ? setSheet('quick-add') : setSheet('new-project')}
-            style={{ width:'46px', height:'46px', background: C.navy, color:'#fff', borderRadius:'14px', border:'none', fontSize:'22px', cursor:'pointer', marginTop:'-14px', boxShadow:'0 4px 16px rgba(30,58,74,.35)', display:'flex', alignItems:'center', justifyContent:'center', transition:'transform 0.12s ease' }}
-            onTouchStart={e=>(e.currentTarget.style.transform='scale(.93)')}
-            onTouchEnd={e=>(e.currentTarget.style.transform='scale(1)')}
-          >＋</button>
-        </div>
-        {rightTabs.map(t => <NavTab key={t.key} t={t}/>)}
+        {navTabs.map(t => {
+          const isActive = view === t.key
+          return (
+            <div key={t.key} onClick={() => setView(t.key as any)}
+              style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px', padding:'6px 0', cursor:'pointer', WebkitTapHighlightColor:'transparent' as any }}>
+              <div style={{ padding:'4px 8px', borderRadius:'10px', background: isActive ? C.mist : 'transparent', transition:'background 0.15s ease', color: isActive ? C.navy : C.slate }}>
+                {NAV_ICONS[t.key]}
+              </div>
+              <span style={{ fontSize:'9px', fontWeight: isActive ? 700 : 500, color: isActive ? C.navy : C.slate, transition:'color 0.15s ease' }}>{t.label}</span>
+            </div>
+          )
+        })}
       </nav>
     )
   }
@@ -237,32 +228,75 @@ function InnerApp() {
     </Sheet>
   ) : null
 
-  // ── PROFILE SHEET ──────────────────────────────────────────
+  // ── PROFILE SHEET — premium, photo upload, PIN ─────────────
+  const avatarUrl = `https://yvllrkopqcmiynofayif.supabase.co/storage/v1/object/public/photos/avatars/${user?.profile?.id}`
+  const [photoTs, setPhotoTs] = React.useState(Date.now())
+
+  const uploadAvatar = async (file: File) => {
+    const { supabase } = await import('./lib/supabase')
+    const buf = await file.arrayBuffer()
+    await supabase.storage.from('photos').upload(`avatars/${user?.profile?.id}`, buf, { contentType: file.type, upsert: true })
+    setPhotoTs(Date.now())
+  }
+
   const ProfileSheet = () => showProfile ? (
-    <Sheet title="Account" onClose={() => setShowProfile(false)}>
-      <div style={{ display:'flex', gap:'14px', alignItems:'center', padding:'4px 0 20px' }}>
-        <div style={{ width:'52px', height:'52px', borderRadius:'16px', background: C.navy, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'18px', fontWeight:700, flexShrink:0 }}>
-          {initials(user?.profile.full_name)}
+    <Sheet title="" onClose={() => setShowProfile(false)}>
+      {/* Hero photo area */}
+      <div style={{ margin:'-24px -24px 0', position:'relative', height:'220px', background:`linear-gradient(135deg, ${C.navy} 0%, #1a3a5c 100%)`, borderRadius:'0', overflow:'hidden' }}>
+        <img src={`${avatarUrl}?t=${photoTs}`} alt=""
+          style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}
+          onError={e => { (e.target as HTMLImageElement).style.display='none' }}/>
+        {/* Gradient overlay */}
+        <div style={{ position:'absolute', inset:0, background:'linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 50%)' }}/>
+        {/* Name over photo */}
+        <div style={{ position:'absolute', bottom:'16px', left:'20px', right:'20px' }}>
+          <div style={{ fontSize:'22px', fontWeight:800, color:'#fff', letterSpacing:'-0.01em', lineHeight:1.2 }}>{user?.profile.full_name}</div>
+          <div style={{ fontSize:'13px', color:'rgba(255,255,255,.65)', marginTop:'2px' }}>{user?.email}</div>
         </div>
-        <div>
-          <div style={{ fontSize:'17px', fontWeight:700, color: C.navy }}>{user?.profile.full_name}</div>
-          <div style={{ fontSize:'13px', color: C.slate, marginTop:'2px' }}>{user?.email}</div>
-          <div style={{ display:'inline-block', marginTop:'6px', padding:'2px 10px', borderRadius:'99px', background: C.mist, fontSize:'11px', fontWeight:600, color: C.slate, textTransform:'capitalize' }}>
-            {role.replace(/_/g,' ')}
-          </div>
+        {/* Upload button */}
+        <label style={{ position:'absolute', top:'14px', right:'14px', width:'36px', height:'36px', borderRadius:'50%', background:'rgba(0,0,0,.4)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', backdropFilter:'blur(4px)' }}>
+          <Ico icon={CameraIcon} size={18} color="#fff"/>
+          <input type="file" accept="image/*" style={{ display:'none' }} onChange={e => { const f=e.target.files?.[0]; if(f) uploadAvatar(f) }}/>
+        </label>
+        {/* Role badge */}
+        <div style={{ position:'absolute', top:'16px', left:'16px', padding:'3px 10px', borderRadius:'99px', background:'rgba(255,255,255,.15)', backdropFilter:'blur(4px)', fontSize:'11px', fontWeight:600, color:'rgba(255,255,255,.9)', textTransform:'capitalize' }}>
+          {role.replace(/_/g,' ')}
         </div>
       </div>
-      <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:'16px' }}>
+
+      {/* PIN section */}
+      <div style={{ padding:'20px 0 4px' }}>
+        <div style={{ fontSize:'11px', fontWeight:700, color: C.slate, letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'12px' }}>Security</div>
+        {pinLock.hasPin ? (
+          <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
+            <button onClick={() => { setShowProfile(false); setShowPinSetup(true) }}
+              style={{ ...btnGhost, justifyContent:'flex-start', height:'40px' }}>
+              <Ico icon={KeyIcon} size={16}/> Change PIN
+            </button>
+            <button onClick={() => { pinLock.removePin(); toast('PIN removed') }}
+              style={{ ...btnGhost, justifyContent:'flex-start', height:'40px', color:C.red }}>
+              <Ico icon={XMarkIcon} size={16}/> Remove PIN
+            </button>
+          </div>
+        ) : (
+          <button onClick={() => { setShowProfile(false); setShowPinSetup(true) }}
+            style={{ ...btnGhost, justifyContent:'flex-start', height:'40px', width:'100%' }}>
+            <Ico icon={KeyIcon} size={16}/> Set up App PIN
+          </button>
+        )}
+      </div>
+
+      <div style={{ borderTop:`1px solid ${C.border}`, padding:'16px 0 4px' }}>
         <div style={{ fontSize:'11px', fontWeight:700, color: C.slate, letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'8px' }}>App</div>
         <div style={{ fontSize:'12px', color: C.slate, lineHeight:1.8 }}>
-          Ease Builders Site Manager<br/>
+          Ease Builders Site Manager · v4.0<br/>
           Secured by Supabase · Real-time sync
         </div>
       </div>
-      <div style={{ marginTop:'24px' }}>
+      <div style={{ marginTop:'20px' }}>
         <button onClick={() => { setShowProfile(false); signOut() }}
           style={{ ...btnDanger, width:'100%', justifyContent:'center', height:'44px' }}>
-          Sign Out
+          <Ico icon={ArrowRightOnRectangleIcon} size={18}/> Sign Out
         </button>
       </div>
     </Sheet>
@@ -315,38 +349,21 @@ function InnerApp() {
               </div>
             </div>
           )}
-          <div style={{ fontSize:'11px', fontWeight:700, color: C.slate, letterSpacing:'.1em', textTransform:'uppercase', padding:'0 16px', marginBottom:'8px' }}>Project Health</div>
-          <div style={{ width:'28px', height:'2.5px', background: C.gold, borderRadius:'2px', margin:'0 0 12px 16px' }}/>
-          <div style={{ padding:'0 16px' }}>
+          {/* Quick project links — compact, no duplicate cards */}
+          <div style={{ padding:'0 16px 16px' }}>
+            <div style={{ fontSize:'11px', fontWeight:700, color: C.slate, letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'8px' }}>Projects</div>
             {projects.map(p => {
               const h = projectHealth(p)
               return (
-                <div key={p.id}
-                onClick={() => goProject(p)}
-                style={{ background:'#fff', borderRadius:'14px', marginBottom:'10px', cursor:'pointer', overflow:'hidden',
-                  boxShadow:'0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04)',
-                  borderLeft:`3px solid ${TYPE_ACCENT[p.type || ''] || C.navy}`,
-                  WebkitTapHighlightColor:'transparent' as any,
-                  transition:'transform .12s ease' }}
-                onTouchStart={e=>(e.currentTarget.style.transform='scale(.985)')}
-                onTouchEnd={e=>(e.currentTarget.style.transform='scale(1)')}>
-                  <div style={{ padding:'12px 14px' }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'6px' }}>
-                      <div style={{ flex:1, minWidth:0, marginRight:'10px' }}>
-                        <div style={{ fontWeight:700, fontSize:'14px', color: C.ink, lineHeight:1.3,
-                          display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as any, overflow:'hidden' }}>{p.name}</div>
-                        <div style={{ fontSize:'11px', color: C.slate, marginTop:'2px' }}>{[p.client, p.location].filter(Boolean).join(' · ')}</div>
-                      </div>
-                      <HealthBadge h={h}/>
-                    </div>
-                    <div style={{ height:'3px', background: C.mist, borderRadius:'99px', overflow:'hidden', marginBottom:'4px' }}>
-                      <div style={{ height:'100%', background: h==='green'?C_.success:h==='amber'?C_.warning:C_.danger, borderRadius:'99px', width:`${p.progress}%`, transition:'width .6s ease' }}/>
-                    </div>
-                    <div style={{ display:'flex', justifyContent:'space-between', fontSize:'10px', color: C.slate }}>
-                      <span>{p.progress}% · {p.stage || 'In Progress'}</span>
-                      <span>{p.budget ? fmtCur(p.budget) : ''}</span>
-                    </div>
+                <div key={p.id} onClick={() => goProject(p)}
+                  style={{ display:'flex', alignItems:'center', gap:'12px', padding:'10px 0', borderBottom:`1px solid ${C.border}`, cursor:'pointer' }}>
+                  <div style={{ width:'8px', height:'8px', borderRadius:'50%', flexShrink:0,
+                    background: h==='green'?C_.success:h==='amber'?C_.warning:C_.danger }}/>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:'14px', fontWeight:600, color:C.ink, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</div>
+                    <div style={{ fontSize:'11px', color:C.slate }}>{p.progress}% · {p.stage || 'In Progress'}</div>
                   </div>
+                  <Ico icon={ChevronRightIcon} size={14} color={C.slate}/>
                 </div>
               )
             })}
@@ -359,9 +376,15 @@ function InnerApp() {
   // ── PROJECTS LIST ──────────────────────────────────────────
   const ProjectsView = () => (
     <div style={{ padding:'16px', paddingBottom:'80px' }}>
-      <div style={{ marginBottom:'20px' }}>
-        <div style={{ fontSize:'26px', fontWeight:800, color: C.navy, letterSpacing:'-0.025em', lineHeight:1.2 }}>Projects</div>
-        <div style={{ fontSize:'13px', color: C.slate, marginTop:'3px' }}>Construction sites and progress</div>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'20px' }}>
+        <div>
+          <div style={{ fontSize:'26px', fontWeight:800, color: C.navy, letterSpacing:'-0.025em', lineHeight:1.2 }}>Projects</div>
+          <div style={{ fontSize:'13px', color: C.slate, marginTop:'3px' }}>Construction sites and progress</div>
+        </div>
+        <button onClick={() => { setProjForm({}); setEditProjId(null); setSheet('new-project') }}
+          style={{ ...btnPrimary, height:'36px', marginTop:'4px', flexShrink:0 }}>
+          ＋ New
+        </button>
       </div>
       {projLoading && (
         <div style={{ display:'flex', flexDirection:'column', gap:'12px' }}>
@@ -492,6 +515,26 @@ function InnerApp() {
   )
 
   return (
+    <>
+      {/* PIN lock screen — shown when locked */}
+      {pinLock.isLocked && (
+        <LockScreen
+          mode="unlock"
+          onUnlock={pin => pinLock.verifyPin(pin)}
+          onSetup={() => {}}
+          onForgot={() => { if(confirm('Remove PIN and sign out?')) { pinLock.removePin(); signOut() } }}
+        />
+      )}
+      {/* PIN setup screen */}
+      {showPinSetup && (
+        <LockScreen
+          mode="setup"
+          onUnlock={() => false}
+          onSetup={pin => { pinLock.setPin(pin); setShowPinSetup(false); toast('PIN set') }}
+          onForgot={() => {}}
+          onCancel={() => setShowPinSetup(false)}
+        />
+      )}
     <div style={{ ...SF, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background: C.ash, maxWidth:'540px', margin:'0 auto' }}>
       <TopBar/>
       <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} style={{ flex:1, overflowY:'auto', overflowX:'hidden', WebkitOverflowScrolling:'touch' as any }}>
@@ -536,6 +579,7 @@ function InnerApp() {
         </Sheet>
       )}
     </div>
+    </>
   )
 }
 
