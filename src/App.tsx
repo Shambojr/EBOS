@@ -106,33 +106,46 @@ function InnerApp() {
   const goProject = (p: Project) => { setActiveProject(p); setTab('overview'); setView('project') }
   const goBack = () => { setActiveProject(null); setView('projects') }
 
-  // ── SWIPE GESTURES ─────────────────────────────────────────
+  // ── SWIPE GESTURES — document-level to work inside scrollable views ─
   const touchRef = useRef<{ x: number; y: number } | null>(null)
-  const MAIN_ORDER = navTabs.map(t => t.key) as string[]
-  const onTouchStart = (e: React.TouchEvent) => {
-    const target = e.target as HTMLElement
-    if (target.closest('[data-no-swipe]')) { touchRef.current = null; return }
-    const t = e.touches[0]
-    touchRef.current = { x: t.clientX, y: t.clientY }
-  }
-  const onTouchEnd = (e: React.TouchEvent) => {
-    if (!touchRef.current) return
-    const t = e.changedTouches[0]
-    const dx = t.clientX - touchRef.current.x
-    const dy = t.clientY - touchRef.current.y
-    touchRef.current = null
-    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return
-    if (view === 'home' || view === 'projects' || view === 'finance') {
-      const idx = MAIN_ORDER.indexOf(view as string)
-      const next = dx < 0 ? idx + 1 : idx - 1
-      if (next >= 0 && next < MAIN_ORDER.length) setView(MAIN_ORDER[next] as any)
-    } else if (view === 'project' && activeProject) {
-      const allowedTabs = PROJECT_TABS[role]
-      const idx = allowedTabs.indexOf(tab)
-      const next = dx < 0 ? idx + 1 : idx - 1
-      if (next >= 0 && next < allowedTabs.length) setTab(allowedTabs[next])
+  const viewRef  = useRef(view)
+  const tabRef   = useRef(tab)
+  viewRef.current = view
+  tabRef.current  = tab
+
+  useEffect(() => {
+    const onStart = (e: TouchEvent) => {
+      const target = e.target as HTMLElement
+      if (target.closest('[data-no-swipe]')) { touchRef.current = null; return }
+      touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
     }
-  }
+    const onEnd = (e: TouchEvent) => {
+      if (!touchRef.current) return
+      const dx = e.changedTouches[0].clientX - touchRef.current.x
+      const dy = e.changedTouches[0].clientY - touchRef.current.y
+      touchRef.current = null
+      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return
+      const cur = viewRef.current
+      const curTab = tabRef.current
+      const order = NAV_TABS[role].map(t => t.key)
+      if (cur === 'project') {
+        const tabs = PROJECT_TABS[role]
+        const idx = tabs.indexOf(curTab)
+        const next = dx < 0 ? idx + 1 : idx - 1
+        if (next >= 0 && next < tabs.length) setTab(tabs[next])
+      } else {
+        const idx = order.indexOf(cur)
+        const next = dx < 0 ? idx + 1 : idx - 1
+        if (next >= 0 && next < order.length) setView(order[next] as any)
+      }
+    }
+    document.addEventListener('touchstart', onStart, { passive: true })
+    document.addEventListener('touchend',   onEnd,   { passive: true })
+    return () => {
+      document.removeEventListener('touchstart', onStart)
+      document.removeEventListener('touchend',   onEnd)
+    }
+  }, [role])
 
   // ── TOP BAR ────────────────────────────────────────────────
   const TopBar = () => (
@@ -537,7 +550,7 @@ function InnerApp() {
       )}
     <div style={{ ...SF, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden', background: C.ash, maxWidth:'540px', margin:'0 auto' }}>
       <TopBar/>
-      <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} style={{ flex:1, overflowY:'auto', overflowX:'hidden', WebkitOverflowScrolling:'touch' as any }}>
+      <div style={{ flex:1, overflowY:'auto', overflowX:'hidden', WebkitOverflowScrolling:'touch' as any }}>
         {view === 'home'      && <HomeView/>}
         {view === 'projects'  && <ProjectsView/>}
         {view === 'project'   && activeProject && <ProjectView project={activeProject} tab={tab} setTab={setTab} sheet={sheet} setSheet={setSheet} role={role} user={user!.profile}/>}
