@@ -136,7 +136,7 @@ function InnerApp() {
 
   // ── TOP BAR ────────────────────────────────────────────────
   const TopBar = () => (
-    <div style={{ height:'52px', background:'#fff', borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 12px 0 16px', position:'sticky', top:0, zIndex:30, flexShrink:0 }}>
+    <div style={{ height:'68px', background:'#fff', borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 12px 0 16px', position:'sticky', top:0, zIndex:30, flexShrink:0 }}>
       {/* Left */}
       <div style={{ display:'flex', alignItems:'center', gap:'8px', flex:1, minWidth:0 }}>
         {view === 'project' ? (
@@ -145,7 +145,7 @@ function InnerApp() {
             <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{activeProject?.name}</span>
           </button>
         ) : (
-          <img src={LOGO_NAVY} alt="Ease Builders" style={{ height:'28px', width:'auto', display:'block' }}/>
+          <img src={LOGO_NAVY} alt="Ease Builders" style={{ height:'40px', width:'auto', display:'block' }}/>
         )}
       </div>
       {/* Right */}

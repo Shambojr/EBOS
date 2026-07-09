@@ -14,14 +14,14 @@ export function usePinLock() {
   const [hasPin,      setHasPin]      = useState(false)
   const [wrongCount,  setWrongCount]  = useState(0)
 
-  // On mount: check if PIN exists and if idle too long
+  // On mount: fresh page load = app was closed → lock immediately if PIN exists
   useEffect(() => {
     const stored = localStorage.getItem(PIN_KEY)
     setHasPin(!!stored)
     if (stored) {
-      const last = localStorage.getItem(LAST_ACTIVE_KEY)
-      const elapsed = last ? Date.now() - parseInt(last) : Infinity
-      setIsLocked(elapsed > IDLE_MS)
+      // Always lock on fresh load (app was closed/killed)
+      setIsLocked(true)
+      localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString())
     }
   }, [])
 
