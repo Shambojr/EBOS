@@ -108,7 +108,7 @@ function InnerApp() {
 
   // ── SWIPE GESTURES ─────────────────────────────────────────
   const touchRef = useRef<{ x: number; y: number } | null>(null)
-  const MAIN_ORDER = ['home', 'projects', 'workspace', 'finance'] as const
+  const MAIN_ORDER = navTabs.map(t => t.key) as string[]
   const onTouchStart = (e: React.TouchEvent) => {
     const target = e.target as HTMLElement
     if (target.closest('[data-no-swipe]')) { touchRef.current = null; return }
@@ -123,7 +123,7 @@ function InnerApp() {
     touchRef.current = null
     if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return
     if (view === 'home' || view === 'projects' || view === 'finance') {
-      const idx = MAIN_ORDER.indexOf(view as any)
+      const idx = MAIN_ORDER.indexOf(view as string)
       const next = dx < 0 ? idx + 1 : idx - 1
       if (next >= 0 && next < MAIN_ORDER.length) setView(MAIN_ORDER[next])
     } else if (view === 'project' && activeProject) {
