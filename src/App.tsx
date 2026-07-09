@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import React from 'react'
 import {
   HomeIcon, BuildingOffice2Icon, ClipboardDocumentListIcon, CurrencyRupeeIcon,
-  EllipsisHorizontalIcon, CheckIcon, BellIcon, CalendarDaysIcon, MapPinIcon,
+  EllipsisHorizontalIcon, CheckIcon, BellIcon, BellAlertIcon, CalendarDaysIcon, MapPinIcon,
   ChevronLeftIcon, ChevronRightIcon, ExclamationTriangleIcon, ArrowRightOnRectangleIcon,
   UsersIcon, CameraIcon, KeyIcon, XMarkIcon, Ico,
 } from './design/icons'
@@ -321,12 +321,39 @@ function InnerApp() {
   // ProjectSheet JSX is inlined in the return below (avoids remount on every keystroke)
 
   // ── HOME VIEW ──────────────────────────────────────────────
-  const HomeView = () => (
+  const HomeView = () => {
+    const hour = new Date().getHours()
+    const firstName = user!.profile.full_name.split(' ')[0]
+    const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+
+    // Morning briefing text
+    const alerts: string[] = []
+    if (ws.overdueTasks.length > 0) alerts.push(`${ws.overdueTasks.length} overdue task${ws.overdueTasks.length>1?'s':''}`)
+    if (ws.todayReminders.length > 0) alerts.push(`${ws.todayReminders.length} reminder${ws.todayReminders.length>1?'s':''} due today`)
+    if (ws.overdueReminders.length > 0) alerts.push(`${ws.overdueReminders.length} overdue reminder${ws.overdueReminders.length>1?'s':''}`)
+    const urgentProject = [...projects]
+      .filter(p => p.end_date && p.status === 'Active')
+      .sort((a,b) => new Date(a.end_date!).getTime() - new Date(b.end_date!).getTime())[0]
+    if (urgentProject?.end_date) {
+      const days = Math.ceil((new Date(urgentProject.end_date).getTime() - Date.now()) / 864e5)
+      if (days > 0 && days <= 30) alerts.push(`${urgentProject.name.split(' ')[0]} deadline in ${days}d`)
+    }
+    const briefingText = alerts.length > 0
+      ? `${greeting}, ${firstName}. ${alerts.join(' · ')}.`
+      : `${greeting}, ${firstName}. Everything looks clear today.`
+
+    // Pending approvals: tasks marked "Waiting" + milestones overdue
+    const waitingTasks = ws.tasks.filter((t:any) => t.status === 'Waiting')
+    const overdueMs    = projects.flatMap(p => []).slice(0,0) // placeholder — milestone data is per-project
+
+    return (
     <div style={{ paddingBottom:'80px' }}>
+      {/* Header */}
       <div style={{ padding:'20px 16px 4px' }}>
         <div style={{ fontSize:'26px', fontWeight:800, color: C.navy, letterSpacing:'-0.025em', lineHeight:1.2 }}>Command Center</div>
         <div style={{ fontSize:'13px', color: C.slate, marginTop:'4px' }}>{new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}</div>
       </div>
+
       {!projects.length ? (
         <EmptyState
           icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>}
@@ -335,56 +362,148 @@ function InnerApp() {
           ctaLabel="＋ Create First Project"
           onCta={() => { setProjForm({}); setEditProjId(null); setSheet('new-project') }}
         />
-      ) : (
-        <div>
-          <StatGrid tiles={[
-            {label:'Active',  value:String(projects.filter(p=>p.status==='Active').length)},
-            {label:'Delayed', value:String(projects.filter(p=>projectHealth(p)==='red').length), alert:projects.filter(p=>projectHealth(p)==='red').length>0},
-            {label:'Budget',  value:fmtCur(projects.reduce((s,p)=>s+(p.budget??0),0)), accent:C.gold},
-            {label:'Pending', value:'0'},
-          ]}/>
+      ) : (<>
 
-          {/* Workspace widgets */}
-          {(ws.myTasks.length > 0 || ws.todayReminders.length > 0) && (
-            <div style={{ padding:'0 16px', marginBottom:'16px' }}>
-              <div style={{ fontSize:'11px', fontWeight:700, color: C.slate, letterSpacing:'.1em', textTransform:'uppercase', marginBottom:'8px' }}>Today's Work</div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
-                <div onClick={() => setView('workspace')} style={{ ...card, padding:'14px', cursor:'pointer' }}>
-                  <div style={{ fontSize:'9px', fontWeight:700, color: ws.overdueTasks.length>0?C.red:C.slate, textTransform:'uppercase', letterSpacing:'.07em', marginBottom:'4px' }}>My Tasks</div>
-                  <div style={{ fontSize:'22px', fontWeight:800, color: ws.overdueTasks.length>0?C.red:C.navy }}>{ws.myTasks.length}</div>
-                  {ws.overdueTasks.length>0 && <div style={{ fontSize:'11px', color:C.red, display:'flex', alignItems:'center', gap:'3px' }}><Ico icon={ExclamationTriangleIcon} size={12}/>{ws.overdueTasks.length} overdue</div>}
-                </div>
-                <div onClick={() => setView('workspace')} style={{ ...card, padding:'14px', cursor:'pointer' }}>
-                  <div style={{ fontSize:'9px', fontWeight:700, color: ws.todayReminders.length>0?C.amber:C.slate, textTransform:'uppercase', letterSpacing:'.07em', marginBottom:'4px' }}>Reminders</div>
-                  <div style={{ fontSize:'22px', fontWeight:800, color: ws.todayReminders.length>0?C.amber:C.navy }}>{ws.todayReminders.length}</div>
-                  {ws.overdueReminders.length>0 && <div style={{ fontSize:'11px', color:C.red, display:'flex', alignItems:'center', gap:'3px' }}><Ico icon={ExclamationTriangleIcon} size={12}/>{ws.overdueReminders.length} overdue</div>}
-                </div>
-              </div>
+        {/* KPI tiles */}
+        <StatGrid tiles={[
+          {label:'Active',  value:String(projects.filter(p=>p.status==='Active').length)},
+          {label:'Delayed', value:String(projects.filter(p=>projectHealth(p)==='red').length), alert:projects.filter(p=>projectHealth(p)==='red').length>0},
+          {label:'Budget',  value:fmtCur(projects.reduce((s,p)=>s+(p.budget??0),0)), accent:C.gold},
+          {label:'Tasks',   value:String(ws.myTasks.length), alert:ws.overdueTasks.length>0},
+        ]}/>
+
+        {/* ── Morning Briefing Card ───────────────────────────── */}
+        <div style={{ margin:'0 16px 16px' }}>
+          <div style={{ background: C.navy, borderRadius:'16px', padding:'16px 18px', position:'relative', overflow:'hidden' }}>
+            <div style={{ position:'absolute', top:'-20px', right:'-20px', width:'100px', height:'100px', borderRadius:'50%', background:'rgba(255,255,255,.04)' }}/>
+            <div style={{ position:'absolute', bottom:'-30px', right:'20px', width:'70px', height:'70px', borderRadius:'50%', background:'rgba(255,255,255,.03)' }}/>
+            <div style={{ fontSize:'10px', fontWeight:700, letterSpacing:'.1em', textTransform:'uppercase', color:'rgba(255,255,255,.4)', marginBottom:'6px' }}>
+              {hour < 12 ? '🌅 Morning Briefing' : hour < 17 ? '☀ Afternoon Update' : '🌙 Evening Summary'}
             </div>
-          )}
-          {/* Quick project links — compact, no duplicate cards */}
-          <div style={{ padding:'0 16px 16px' }}>
-            <div style={{ fontSize:'11px', fontWeight:700, color: C.slate, letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'8px' }}>Projects</div>
-            {projects.map(p => {
-              const h = projectHealth(p)
-              return (
-                <div key={p.id} onClick={() => goProject(p)}
-                  style={{ display:'flex', alignItems:'center', gap:'12px', padding:'10px 0', borderBottom:`1px solid ${C.border}`, cursor:'pointer' }}>
-                  <div style={{ width:'8px', height:'8px', borderRadius:'50%', flexShrink:0,
-                    background: h==='green'?C_.success:h==='amber'?C_.warning:C_.danger }}/>
+            <div style={{ fontSize:'14px', color:'rgba(255,255,255,.9)', lineHeight:1.6, fontWeight:400 }}>
+              {briefingText}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Alerts ─────────────────────────────────────────── */}
+        {(ws.overdueTasks.length > 0 || ws.overdueReminders.length > 0) && (
+          <div style={{ padding:'0 16px', marginBottom:'16px' }}>
+            <div style={{ fontSize:'11px', fontWeight:700, color:C.slate, letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'8px' }}>Needs Attention</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:'6px' }}>
+              {ws.overdueTasks.slice(0,2).map((t:any) => (
+                <div key={t.id} onClick={() => setView('workspace')}
+                  style={{ display:'flex', gap:'10px', alignItems:'center', padding:'10px 14px', background:'#fff', borderRadius:'12px', cursor:'pointer', borderLeft:`3px solid ${C_.danger}`, boxShadow:'0 1px 3px rgba(0,0,0,.06)' }}>
+                  <Ico icon={ExclamationTriangleIcon} size={16} color={C_.danger}/>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:'14px', fontWeight:600, color:C.ink, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</div>
-                    <div style={{ fontSize:'11px', color:C.slate }}>{p.progress}% · {p.stage || 'In Progress'}</div>
+                    <div style={{ fontSize:'13px', fontWeight:600, color:C.ink, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.title}</div>
+                    <div style={{ fontSize:'11px', color:C_.danger }}>Task overdue</div>
                   </div>
                   <Ico icon={ChevronRightIcon} size={14} color={C.slate}/>
                 </div>
-              )
-            })}
+              ))}
+              {ws.overdueReminders.slice(0,2).map((r:any) => (
+                <div key={r.id} onClick={() => setView('workspace')}
+                  style={{ display:'flex', gap:'10px', alignItems:'center', padding:'10px 14px', background:'#fff', borderRadius:'12px', cursor:'pointer', borderLeft:`3px solid ${C_.warning}`, boxShadow:'0 1px 3px rgba(0,0,0,.06)' }}>
+                  <Ico icon={BellAlertIcon} size={16} color={C_.warning}/>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:'13px', fontWeight:600, color:C.ink, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.title}</div>
+                    <div style={{ fontSize:'11px', color:C_.warning }}>Reminder overdue · {r.category}</div>
+                  </div>
+                  <Ico icon={ChevronRightIcon} size={14} color={C.slate}/>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Pending Approvals ───────────────────────────────── */}
+        {waitingTasks.length > 0 && (
+          <div style={{ padding:'0 16px', marginBottom:'16px' }}>
+            <div style={{ fontSize:'11px', fontWeight:700, color:C.slate, letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'8px' }}>Pending Your Action</div>
+            <div style={{ ...card }}>
+              {waitingTasks.slice(0,3).map((t:any, i:number) => (
+                <div key={t.id} onClick={() => setView('workspace')}
+                  style={{ display:'flex', gap:'10px', alignItems:'center', padding:'12px 14px', borderBottom: i < Math.min(waitingTasks.length,3)-1 ? `1px solid ${C.border}` : 'none', cursor:'pointer' }}>
+                  <div style={{ width:'32px', height:'32px', borderRadius:'10px', background:C_.infoBg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <Ico icon={ClipboardDocumentListIcon} size={16} color={C_.info}/>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:'13px', fontWeight:600, color:C.ink, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.title}</div>
+                    <div style={{ fontSize:'11px', color:C.slate }}>Waiting · {t.creator?.full_name || 'Team'}</div>
+                  </div>
+                  <span style={{ padding:'2px 8px', borderRadius:'99px', background:C_.infoBg, color:C_.info, fontSize:'10px', fontWeight:700 }}>Review</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Quick Actions ───────────────────────────────────── */}
+        <div style={{ padding:'0 16px', marginBottom:'16px' }}>
+          <div style={{ fontSize:'11px', fontWeight:700, color:C.slate, letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'8px' }}>Quick Actions</div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'8px' }}>
+            {[
+              { icon:ClipboardDocumentListIcon, label:'Site Log',   action:() => setView('projects') },
+              { icon:CheckIcon,                 label:'New Task',   action:() => setView('workspace') },
+              { icon:CurrencyRupeeIcon,         label:'Finance',    action:() => setView('finance') },
+            ].map(({ icon, label, action }) => (
+              <div key={label} onClick={action}
+                style={{ ...card, padding:'14px 10px', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:'8px', textAlign:'center' }}>
+                <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:C.mist, display:'flex', alignItems:'center', justifyContent:'center', color:C.navy }}>
+                  <Ico icon={icon} size={20}/>
+                </div>
+                <div style={{ fontSize:'11px', fontWeight:600, color:C.ink }}>{label}</div>
+              </div>
+            ))}
           </div>
         </div>
-      )}
+
+        {/* ── Recent Activity ─────────────────────────────────── */}
+        {ws.activity.length > 0 && (
+          <div style={{ padding:'0 16px', marginBottom:'16px' }}>
+            <div style={{ fontSize:'11px', fontWeight:700, color:C.slate, letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'8px' }}>Recent Activity</div>
+            <div style={{ ...card }}>
+              {ws.activity.slice(0,4).map((a:any, i:number) => (
+                <div key={a.id} style={{ display:'flex', gap:'10px', alignItems:'flex-start', padding:'10px 14px', borderBottom: i < 3 ? `1px solid ${C.border}` : 'none' }}>
+                  <div style={{ width:'28px', height:'28px', borderRadius:'8px', background:C.navy, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'10px', fontWeight:700, flexShrink:0 }}>
+                    {(a.user?.full_name||'?').split(' ').map((w:string)=>w[0]).join('').slice(0,2).toUpperCase()}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:'13px', color:C.ink, lineHeight:1.4 }}>
+                      <strong style={{ fontWeight:600 }}>{a.user?.full_name?.split(' ')[0] || 'System'}</strong>{' '}{a.action}
+                    </div>
+                    <div style={{ fontSize:'11px', color:C.slate, marginTop:'2px' }}>{smartDate(a.created_at, 'ago')}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Projects compact list ────────────────────────────── */}
+        <div style={{ padding:'0 16px 16px' }}>
+          <div style={{ fontSize:'11px', fontWeight:700, color: C.slate, letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'8px' }}>Projects</div>
+          {projects.map(p => {
+            const h = projectHealth(p)
+            return (
+              <div key={p.id} onClick={() => goProject(p)}
+                style={{ display:'flex', alignItems:'center', gap:'12px', padding:'10px 0', borderBottom:`1px solid ${C.border}`, cursor:'pointer' }}>
+                <div style={{ width:'8px', height:'8px', borderRadius:'50%', flexShrink:0, background: h==='green'?C_.success:h==='amber'?C_.warning:C_.danger }}/>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:'14px', fontWeight:600, color:C.ink, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</div>
+                  <div style={{ fontSize:'11px', color:C.slate }}>{p.progress}% · {p.stage || 'In Progress'}</div>
+                </div>
+                <Ico icon={ChevronRightIcon} size={14} color={C.slate}/>
+              </div>
+            )
+          })}
+        </div>
+
+      </>)}
     </div>
-  )
+    )
+  }
 
   // ── PROJECTS LIST ──────────────────────────────────────────
   const ProjectsView = () => (
