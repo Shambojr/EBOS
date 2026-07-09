@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useFinance, calcInterestAccrued, calcMonthlyInterest } from '../hooks/useFinance'
 import { supabase } from '../lib/supabase'
+import { generateReceipt, shareOrDownload } from '../lib/generateReceipt'
+import { LOGO_NAVY } from '../assets/logo'
 import {
   Ico, VAULT_ICON_MAP,
   CalendarDaysIcon, ClockIcon, ArrowTrendingUpIcon, TagIcon,
@@ -306,6 +308,16 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
               <div style={{ padding:`${space[2]} ${space[4]} ${space[3]}`, display:'flex', gap:space[2], borderTop:`1px solid ${C_.divider}` }}>
                 <button style={{ ...btnP, flex:1 }} onClick={() => { setSelectedFunding(f); setForm({ principal:0, interest:0 }); setSheet('repay') }}>Record Repayment</button>
                 <button style={btnG} onClick={() => { setForm({ ...f, date_received:f.date_received, repayment_date:f.repayment_date??'' }); setEditId(f.id); setSheet('funding') }}>Edit</button>
+                <button style={btnG} onClick={async () => {
+                  const blob = await generateReceipt({ docType:'FUNDING RECEIPT', refNumber:`FR-${f.id.slice(-6).toUpperCase()}`, partyLabel:'SOURCE', partyName:f.source_name, category:f.category+(f.lender_name?` · ${f.lender_name}`:''), date:f.date_received, dueDate:f.repayment_date, status:f.status, notes:f.notes, logoSrc:LOGO_NAVY, fields:[
+                    {label:'Amount Received', value:fmtCur(f.amount_received), bold:true},
+                    {label:'Amount Repaid',   value:fmtCur(f.amount_repaid)},
+                    {label:'Outstanding',     value:fmtCur(f.amount_received-f.amount_repaid), bold:true, accent:(f.amount_received-f.amount_repaid)>0?C_.danger:C_.success},
+                    {label:'Interest Type',   value:f.interest_type==='None'?'None':`${f.interest_rate}% ${f.interest_type}`},
+                    {label:'Days Remaining',  value:f.days_remaining!=null?`${f.days_remaining} days`:(f.days_overdue??0)>0?`${f.days_overdue} days overdue`:'—'},
+                  ]})
+                  await shareOrDownload(blob, `funding-${f.source_name.replace(/\s+/g,'-')}.png`, 'Funding Receipt')
+                }}>Share</button>
                 <button style={btnD} onClick={() => { if(confirm('Delete?')) fin.deleteFunding(f.id) }}>Delete</button>
               </div>
             </div>
@@ -422,6 +434,16 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
             <div style={{ padding:`${space[2]} ${space[4]} ${space[3]}`, display:'flex', gap:space[2], flexWrap:'wrap', borderTop:`1px solid ${C_.divider}` }}>
               {r.status !== 'Paid' && <button style={{ ...btnP, flex:1 }} onClick={() => { setSelectedReceivable(r); setForm({ amount:r.balance, payment_date:today() }); setSheet('recv-pay') }}>Record Payment</button>}
               <button style={btnG} onClick={() => { setForm({ ...r, bill_date:r.bill_date, submitted_date:r.submitted_date??'', expected_date:r.expected_date??'', project_id:r.project_id }); setEditId(r.id); setBillPhotoFile(null); setBillPhotoPreview(null); setSheet('receivable') }}>Edit</button>
+              <button style={btnG} onClick={async () => {
+                const blob = await generateReceipt({ docType:'RECEIVABLE STATEMENT', refNumber:`Bill ${r.bill_number}`, partyLabel:'CLIENT', partyName:r.client_name, projectName:(r as any).project?.name, date:r.bill_date, dueDate:r.expected_date, status:r.status, notes:r.remarks, logoSrc:LOGO_NAVY, fields:[
+                  {label:'Bill Amount',     value:fmtCur(r.bill_amount), bold:true},
+                  {label:'Amount Received', value:fmtCur(r.amount_received)},
+                  {label:'Balance Due',     value:fmtCur(r.balance??0), bold:true, accent:(r.balance??0)>0?C_.danger:C_.success},
+                  {label:'Retention',       value:r.retention_pct>0?`${r.retention_pct}%`:'None'},
+                  {label:'GST',             value:r.gst_amount>0?fmtCur(r.gst_amount):'—'},
+                ]})
+                await shareOrDownload(blob, `bill-${r.bill_number}-${r.client_name.replace(/\s+/g,'-')}.png`, 'Receivable Statement')
+              }}>Share</button>
               <button style={btnD} onClick={() => { if(confirm('Delete?')) fin.deleteReceivable(r.id) }}>Delete</button>
             </div>
           </div>
@@ -545,6 +567,15 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
             <div style={{ padding:`${space[2]} ${space[4]} ${space[3]}`, display:'flex', gap:space[2], flexWrap:'wrap', borderTop:`1px solid ${C_.divider}` }}>
               {p.status !== 'Paid' && <button style={{ ...btnP, flex:1 }} onClick={() => { setSelectedPayable(p); setForm({ amount:p.outstanding, payment_date:today() }); setSheet('pay-pay') }}>Record Payment</button>}
               <button style={btnG} onClick={() => { setForm({ ...p, invoice_date:p.invoice_date, due_date:p.due_date??'' }); setEditId(p.id); setSheet('payable') }}>Edit</button>
+              <button style={btnG} onClick={async () => {
+                const blob = await generateReceipt({ docType:'PAYABLE VOUCHER', refNumber:p.invoice_number?`Inv: ${p.invoice_number}`:`PV-${p.id.slice(-6).toUpperCase()}`, partyLabel:'SUPPLIER', partyName:p.supplier_name, projectName:(p as any).project?.name, date:p.invoice_date, dueDate:p.due_date, status:p.status, notes:p.remarks, logoSrc:LOGO_NAVY, fields:[
+                  {label:'Invoice Amount', value:fmtCur(p.amount), bold:true},
+                  {label:'Amount Paid',   value:fmtCur(p.amount_paid)},
+                  {label:'Outstanding',   value:fmtCur(p.outstanding??0), bold:true, accent:(p.outstanding??0)>0?C_.danger:C_.success},
+                  {label:'PO Number',     value:p.po_number||'—'},
+                ]})
+                await shareOrDownload(blob, `payable-${p.supplier_name.replace(/\s+/g,'-')}.png`, 'Payable Voucher')
+              }}>Share</button>
               <button style={btnD} onClick={() => { if(confirm('Delete?')) fin.deletePayable(p.id) }}>Delete</button>
             </div>
           </div>
