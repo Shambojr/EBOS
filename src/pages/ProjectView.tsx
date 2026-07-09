@@ -801,7 +801,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
       ══════════════════════════════════════════════════════ */}
       {tab === 'photos' && (
         <div style={{ padding: space[4] }}>
-          {pd.boq.length > 0 && (
+          {pd.photos.length > 0 && (
           <div style={{ display:'flex', gap: space[2], justifyContent:'flex-end', marginBottom: space[3] }}>
             <label style={{ ...btnG, cursor:'pointer', height:'44px' }}>
               <Ico icon={CameraIcon} size={16}/> Camera
@@ -812,13 +812,26 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
               <input type="file" accept="image/*" multiple style={{ display:'none' }} onChange={e => { const files = Array.from(e.target.files||[]); if(files.length) pd.addPhotos(files) }}/>
             </label>
           </div>
+          )}
 
           {!pd.photos.length && (
-            <EmptyState
-              icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>}
-              title="No Photos Yet"
-              body="Capture site progress, deliveries and installations."
-            />
+            <div style={{ textAlign:'center', paddingTop: space[5] }}>
+              <EmptyState
+                icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>}
+                title="No Photos Yet"
+                body="Capture site progress, deliveries and installations."
+              />
+              <div style={{ display:'flex', gap: space[2], justifyContent:'center', marginTop: space[3] }}>
+                <label style={{ ...btnG, cursor:'pointer', height:'44px' }}>
+                  <Ico icon={CameraIcon} size={16}/> Camera
+                  <input type="file" accept="image/*" capture="environment" style={{ display:'none' }} onChange={e => { const files = Array.from(e.target.files||[]); if(files.length) pd.addPhotos(files) }}/>
+                </label>
+                <label style={{ ...btnP, cursor:'pointer', height:'44px' }}>
+                  <Ico icon={PhotoIcon} size={16}/> Gallery
+                  <input type="file" accept="image/*" multiple style={{ display:'none' }} onChange={e => { const files = Array.from(e.target.files||[]); if(files.length) pd.addPhotos(files) }}/>
+                </label>
+              </div>
+            </div>
           )}
 
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'2px' }}>
