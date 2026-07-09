@@ -67,30 +67,58 @@ export function WorkspacePage({ user, role, ws, notifications, markAllRead, unre
 
   return (
     <div style={{ fontFamily:"'Inter',system-ui,sans-serif", paddingBottom:'80px' }}>
-      {/* Navy hero */}
-      <div style={{ background: C.navy, padding:`${space[4]} ${space[4]} 0` }}>
-        <div style={{ fontSize:'11px', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', color:'rgba(255,255,255,.4)', marginBottom:space[1] }}>Workspace</div>
-        <div style={{ fontSize:'26px', fontWeight:800, color:'#fff', letterSpacing:'-0.02em', marginBottom:space[1] }}>
-          {ws.myTasks.length > 0 ? `${ws.myTasks.length} open task${ws.myTasks.length>1?'s':''}` : 'All clear'}
-        </div>
-        <div style={{ fontSize:'12px', color:'rgba(255,255,255,.45)', marginBottom:space[4] }}>
-          {ws.todayReminders.length > 0 ? `${ws.todayReminders.length} reminder${ws.todayReminders.length>1?'s':''} due today` : 'No reminders due today'}
-        </div>
-        {/* Quick stats */}
-        {(ws.overdueTasks.length > 0 || ws.overdueReminders.length > 0) && (
-          <div style={{ display:'flex', gap:space[2], marginBottom:space[4] }}>
-            {ws.overdueTasks.length > 0 && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', padding:`${space[1]} ${space[2]}`, background:'rgba(220,38,38,.2)', color:'#fca5a5', borderRadius:R.pill, fontSize:TY.sizeXs, fontWeight:700 }}><Ico icon={ExclamationTriangleIcon} size={14}/>{ws.overdueTasks.length} overdue task{ws.overdueTasks.length>1?'s':''}</span>}
-            {ws.overdueReminders.length > 0 && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px', padding:`${space[1]} ${space[2]}`, background:'rgba(217,119,6,.2)', color:'#fcd34d', borderRadius:R.pill, fontSize:TY.sizeXs, fontWeight:700 }}><Ico icon={BellAlertIcon} size={14}/>{ws.overdueReminders.length} overdue reminder{ws.overdueReminders.length>1?'s':''}</span>}
+      {/* ── Workspace Header — productivity app, NOT a dashboard ── */}
+      <div style={{ background:'#fff', borderBottom:`1px solid ${C_.border}` }}>
+        <div style={{ padding:`${space[4]} ${space[4]} 0` }}>
+          {/* Title row */}
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:space[1] }}>
+            <div>
+              <div style={{ fontSize:'22px', fontWeight:800, color:C.ink, letterSpacing:'-0.02em', lineHeight:1.2 }}>Work</div>
+              <div style={{ fontSize:'13px', color:C.slate, marginTop:'2px' }}>
+                {ws.myTasks.length === 0 && ws.todayReminders.length === 0
+                  ? 'No pending work — all clear'
+                  : [ws.myTasks.length > 0 && `${ws.myTasks.length} open task${ws.myTasks.length>1?'s':''}`, ws.todayReminders.length > 0 && `${ws.todayReminders.length} due today`].filter(Boolean).join(' · ')}
+              </div>
+            </div>
+            {/* Alert chips — only when urgent */}
+            <div style={{ display:'flex', flexDirection:'column', gap:'4px', alignItems:'flex-end' }}>
+              {ws.overdueTasks.length > 0 && (
+                <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', padding:`2px ${space[2]}`, background:C_.dangerBg, color:C_.danger, borderRadius:R.pill, fontSize:'11px', fontWeight:700 }}>
+                  <Ico icon={ExclamationTriangleIcon} size={12}/>{ws.overdueTasks.length} overdue
+                </span>
+              )}
+              {ws.overdueReminders.length > 0 && (
+                <span style={{ display:'inline-flex', alignItems:'center', gap:'3px', padding:`2px ${space[2]}`, background:C_.warningBg, color:C_.warning, borderRadius:R.pill, fontSize:'11px', fontWeight:700 }}>
+                  <Ico icon={BellAlertIcon} size={12}/>{ws.overdueReminders.length} overdue
+                </span>
+              )}
+            </div>
           </div>
-        )}
-        {/* Tabs */}
-        <div data-no-swipe="true" style={{ display:'flex', overflowX:'auto', WebkitOverflowScrolling:'touch', marginBottom:'-1px' }}>
-          {TABS.map(t => (
-            <button key={t.key} onClick={() => setTab(t.key as any)} style={{ position:'relative', padding:`${space[2]} ${space[3]}`, fontSize:'12px', fontWeight:tab===t.key?700:500, color:tab===t.key?'#fff':'rgba(255,255,255,.45)', border:'none', background:'transparent', borderBottom:`2px solid ${tab===t.key?'#fff':'transparent'}`, whiteSpace:'nowrap', cursor:'pointer', fontFamily:'inherit', marginBottom:'-1px', transition:'color .15s' }}>
-              {t.label}
-              {t.badge > 0 && <span style={{ position:'absolute', top:'6px', right:'4px', width:'16px', height:'16px', borderRadius:R.pill, background:C_.danger, color:'#fff', fontSize:'9px', fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center' }}>{t.badge > 9 ? '9+' : t.badge}</span>}
-            </button>
-          ))}
+          {/* Tab bar — segmented, light */}
+          <div data-no-swipe="true" style={{ display:'flex', gap:'2px', overflowX:'auto', WebkitOverflowScrolling:'touch', marginTop:space[3] }}>
+            {TABS.map(t => (
+              <button key={t.key} onClick={() => setTab(t.key as any)} style={{
+                position:'relative', padding:`${space[2]} ${space[3]}`, fontSize:'13px',
+                fontWeight: tab===t.key ? 700 : 500,
+                color: tab===t.key ? C.navy : C.slate,
+                border:'none', background: tab===t.key ? C_.bgMuted : 'transparent',
+                borderRadius:`${R.md} ${R.md} 0 0`,
+                whiteSpace:'nowrap', cursor:'pointer', fontFamily:'inherit',
+                borderBottom: tab===t.key ? `2px solid ${C.navy}` : '2px solid transparent',
+                transition:'all .15s ease',
+              }}>
+                {t.label}
+                {t.badge > 0 && (
+                  <span style={{ marginLeft:'5px', display:'inline-flex', alignItems:'center', justifyContent:'center',
+                    width:'16px', height:'16px', borderRadius:R.pill,
+                    background: t.badge > 0 ? C_.danger : C_.bgMuted,
+                    color:'#fff', fontSize:'9px', fontWeight:800 }}>
+                    {t.badge > 9 ? '9+' : t.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -135,15 +163,17 @@ export function WorkspacePage({ user, role, ws, notifications, markAllRead, unre
         ══════════════════════════════════════════════════════ */}
         {tab === 'tasks' && (
           <div>
-            <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:space[3] }}>
-              <button style={btnP} onClick={() => { setForm({ priority:'Normal', category:'General', status:'Open' }); setSheet('task') }}>＋ Add Task</button>
-            </div>
+            {ws.tasks.length > 0 && (
+              <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:space[3] }}>
+                <button style={btnP} onClick={() => { setForm({ priority:'Normal', category:'General', status:'Open' }); setSheet('task') }}>＋ Add Task</button>
+              </div>
+            )}
 
             {!ws.tasks.length && (
               <EmptyState
                 icon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>}
-                title="No Tasks"
-                body="Assign tasks to yourself or team members. Track status and priority."
+                title="No Tasks Yet"
+                body="Assign tasks to yourself or team members to track status and priority."
                 ctaLabel="＋ Create First Task"
                 onCta={() => { setForm({ priority:'Normal', category:'General', status:'Open' }); setSheet('task') }}
               />
@@ -236,9 +266,11 @@ export function WorkspacePage({ user, role, ws, notifications, markAllRead, unre
         ══════════════════════════════════════════════════════ */}
         {tab === 'reminders' && (
           <div>
-            <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:space[3] }}>
-              <button style={btnP} onClick={() => { setForm({ priority:'Normal', category:'General', repeat_type:'None', due_date:today() }); setSheet('reminder') }}>＋ Add Reminder</button>
-            </div>
+            {ws.reminders.length > 0 && (
+              <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:space[3] }}>
+                <button style={btnP} onClick={() => { setForm({ priority:'Normal', category:'General', repeat_type:'None', due_date:today() }); setSheet('reminder') }}>＋ Add Reminder</button>
+              </div>
+            )}
 
             {!ws.reminders.filter((r: any)=>!r.is_complete).length && !ws.reminders.filter((r: any)=>r.is_complete).length && (
               <EmptyState

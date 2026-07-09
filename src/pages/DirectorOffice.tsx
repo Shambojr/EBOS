@@ -247,7 +247,7 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
     if (mod === 'funding') return (
       <div>
         <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'14px' }}>
-          <button style={btnP} onClick={() => { setForm({ interest_type:'None', interest_rate:0, status:'Active' }); setEditId(null); setSheet('funding') }}>＋ Add Funding</button>
+          {fin.funding.length > 0 && <button style={btnP} onClick={() => { setForm({ interest_type:'None', interest_rate:0, status:'Active' }); setEditId(null); setSheet('funding') }}>＋ Add Funding</button>}
         </div>
         <StatGrid tiles={[
           {label:'Total Borrowed',  value:fmtCur(fin.funding.reduce((s,f)=>s+f.amount_received,0)), accent:C_.info},
@@ -255,7 +255,12 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
           {label:'Interest/Month',  value:fmtCur(s.interestDueThisMonth), alert:s.interestDueThisMonth>50000},
           {label:'Active Loans',    value:String(fin.funding.filter(f=>f.status==='Active'||f.status==='Partially Repaid').length)},
         ]}/>
-        {!fin.funding.length && <div style={{ textAlign:'center', padding:'40px', color:C.slate }}>No funding records yet.</div>}
+        {!fin.funding.length && (
+          <div style={{ textAlign:'center', padding:'40px' }}>
+            <div style={{ color:C.slate, marginBottom:'12px' }}>No funding records yet.</div>
+            <button style={btnP} onClick={() => { setForm({ interest_type:'None', interest_rate:0, status:'Active' }); setEditId(null); setSheet('funding') }}>＋ Add First Funding Record</button>
+          </div>
+        )}
         {fin.funding.map(f => {
           const outstanding = f.amount_received - f.amount_repaid
           const interest = calcInterestAccrued(f)
@@ -351,7 +356,7 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
     if (mod === 'receivables') return (
       <div>
         <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'14px' }}>
-          <button style={btnP} onClick={() => { setForm({ bill_date:today(), retention_pct:0, gst_amount:0, status:'Draft' }); setEditId(null); setBillPhotoFile(null); setBillPhotoPreview(null); setSheet('receivable') }}>＋ Add Bill</button>
+          {fin.receivables.length > 0 && <button style={btnP} onClick={() => { setForm({ bill_date:today(), retention_pct:0, gst_amount:0, status:'Draft' }); setEditId(null); setBillPhotoFile(null); setBillPhotoPreview(null); setSheet('receivable') }}>＋ Add Bill</button>}
         </div>
         <StatGrid tiles={[
           {label:'Outstanding',    value:fmtCur(s.outstandingReceivables), alert:s.overdueReceivables>0},
@@ -359,7 +364,12 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
           {label:'Expected (30d)', value:fmtCur(s.expectedInflowThirtyDays), accent:C_.success},
           {label:'Open Bills',     value:String(fin.receivables.filter(r=>r.status!=='Paid').length)},
         ]}/>
-        {!fin.receivables.length && <div style={{ textAlign:'center', padding:'40px', color:C.slate }}>No receivables yet.</div>}
+        {!fin.receivables.length && (
+          <div style={{ textAlign:'center', padding:'40px' }}>
+            <div style={{ color:C.slate, marginBottom:'12px' }}>No receivables yet.</div>
+            <button style={btnP} onClick={() => { setForm({ bill_date:today(), retention_pct:0, gst_amount:0, status:'Draft' }); setEditId(null); setBillPhotoFile(null); setBillPhotoPreview(null); setSheet('receivable') }}>＋ Add First Bill</button>
+          </div>
+        )}
         {fin.receivables.map(r => {
           const collectedPct = r.bill_amount > 0 ? Math.round((r.amount_received/r.bill_amount)*100) : 0
           const isOD = (r.delay_days ?? 0) > 0
@@ -486,7 +496,12 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
           {label:'Due This Week',  value:fmtCur(fin.payables.filter(p=>{const d=p.due_date&&new Date(p.due_date);const w=new Date();w.setDate(w.getDate()+7);return d&&d<=w&&p.status!=='Paid';}).reduce((s,p)=>s+(p.outstanding??0),0)), accent:C_.warning},
           {label:'Vendors',        value:String(new Set(fin.payables.filter(p=>p.status!=='Paid').map(p=>p.supplier_name)).size)},
         ]}/>
-        {!fin.payables.length && <div style={{ textAlign:'center', padding:'40px', color:C.slate }}>No payables yet.</div>}
+        {!fin.payables.length && (
+          <div style={{ textAlign:'center', padding:'40px' }}>
+            <div style={{ color:C.slate, marginBottom:'12px' }}>No payables yet.</div>
+            <button style={btnP} onClick={() => { setForm({ invoice_date:today(), status:'Pending' }); setEditId(null); setSheet('payable') }}>＋ Add First Payable</button>
+          </div>
+        )}
         {fin.payables.map(p => {
           const paidPct = p.amount > 0 ? Math.round((p.amount_paid/p.amount)*100) : 0
           const isOD = (p.days_overdue ?? 0) > 0
@@ -625,13 +640,18 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
     if (mod === 'banks') return (
       <div>
         <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:'14px' }}>
-          <button style={btnP} onClick={() => { setForm({ account_type:'Current', opening_balance:0, current_balance:0 }); setEditId(null); setSheet('bank') }}>＋ Add Account</button>
+          {fin.accounts.length > 0 && <button style={btnP} onClick={() => { setForm({ account_type:'Current', opening_balance:0, current_balance:0 }); setEditId(null); setSheet('bank') }}>＋ Add Account</button>}
         </div>
         <StatGrid tiles={[
           {label:'Total Balance', value:fmtCur(s.totalBankBalance), accent:s.totalBankBalance>=0?C_.success:C_.danger},
           {label:'Accounts',      value:String(fin.accounts.length)},
         ]}/>
-        {!fin.accounts.length && <div style={{ textAlign:'center', padding:'40px', color:C.slate }}>No bank accounts added yet.</div>}
+        {!fin.accounts.length && (
+          <div style={{ textAlign:'center', padding:'40px' }}>
+            <div style={{ color:C.slate, marginBottom:'12px' }}>No bank accounts added yet.</div>
+            <button style={btnP} onClick={() => { setForm({ account_type:'Current', opening_balance:0, current_balance:0 }); setEditId(null); setSheet('bank') }}>＋ Add First Account</button>
+          </div>
+        )}
         {fin.accounts.map(a => (
           <div key={a.id} style={{ ...card, marginBottom:space[3] }}>
             <div style={{ padding:`${space[3]} ${space[4]}` }}>

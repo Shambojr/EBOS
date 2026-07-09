@@ -292,9 +292,11 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
       ══════════════════════════════════════════════════════ */}
       {tab === 'milestones' && (
         <div style={{ padding: space[4] }}>
-          <div style={{ display:'flex', justifyContent:'flex-end', marginBottom: space[3] }}>
-            <button style={btnP} onClick={() => { setMsForm({}); setEditMs(null); setSheet('milestone') }}>＋ Add</button>
-          </div>
+          {pd.milestones.length > 0 && (
+            <div style={{ display:'flex', justifyContent:'flex-end', marginBottom: space[3] }}>
+              <button style={btnP} onClick={() => { setMsForm({}); setEditMs(null); setSheet('milestone') }}>＋ Add</button>
+            </div>
+          )}
 
           {!pd.milestones.length && <BusinessEmptyState.NoLogs onCta={() => { setMsForm({}); setEditMs(null); setSheet('milestone') }} ctaLabel="＋ Add First Milestone"/>}
 
@@ -371,9 +373,11 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
       ══════════════════════════════════════════════════════ */}
       {tab === 'logs' && (
         <div style={{ padding: space[4] }}>
-          <div style={{ display:'flex', justifyContent:'flex-end', marginBottom: space[3] }}>
-            <button style={btnP} onClick={() => { setLogForm({ log_date: today(), labour: {} }); setEditLog(null); setSheet('log') }}>＋ Log</button>
-          </div>
+          {pd.logs.length > 0 && (
+            <div style={{ display:'flex', justifyContent:'flex-end', marginBottom: space[3] }}>
+              <button style={btnP} onClick={() => { setLogForm({ log_date: today(), labour: {} }); setEditLog(null); setSheet('log') }}>＋ Log</button>
+            </div>
+          )}
 
           {!pd.logs.length && <BusinessEmptyState.NoLogs onCta={() => { setLogForm({ log_date: today(), labour: {} }); setSheet('log') }} ctaLabel="＋ Add First Log"/>}
 
@@ -483,9 +487,11 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
       ══════════════════════════════════════════════════════ */}
       {tab === 'materials' && can(role,'materials') && (
         <div style={{ padding: space[4] }}>
-          <div style={{ display:'flex', justifyContent:'flex-end', marginBottom: space[3] }}>
-            <button style={btnP} onClick={() => { setMatForm({}); setEditMat(null); setSheet('material') }}>＋ Add</button>
-          </div>
+          {pd.materials.length > 0 && (
+            <div style={{ display:'flex', justifyContent:'flex-end', marginBottom: space[3] }}>
+              <button style={btnP} onClick={() => { setMatForm({}); setEditMat(null); setSheet('material') }}>＋ Add</button>
+            </div>
+          )}
 
           {!pd.materials.length && <BusinessEmptyState.NoMaterials onCta={() => { setMatForm({}); setEditMat(null); setSheet('material') }} ctaLabel="＋ Add Material"/>}
 
@@ -587,9 +593,11 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
             </div>
           )}
 
-          <div style={{ display:'flex', justifyContent:'flex-end', marginBottom: space[3] }}>
-            <button style={btnP} onClick={() => { setExpForm({ expense_date: today(), payment_status: 'Pending' }); setSheet('expense') }}>＋ Add</button>
-          </div>
+          {pd.expenses.length > 0 && (
+            <div style={{ display:'flex', justifyContent:'flex-end', marginBottom: space[3] }}>
+              <button style={btnP} onClick={() => { setExpForm({ expense_date: today(), payment_status: 'Pending' }); setSheet('expense') }}>＋ Add</button>
+            </div>
+          )}
 
           {!pd.expenses.length && <BusinessEmptyState.NoExpenses onCta={() => { setExpForm({ expense_date: today(), payment_status: 'Pending' }); setSheet('expense') }} ctaLabel="＋ Add Expense"/>}
 
@@ -662,6 +670,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
             )
           })()}
 
+          {pd.boq.length > 0 && (
           <div style={{ display:'flex', gap: space[2], justifyContent:'flex-end', marginBottom: space[3] }}>
             <label style={{ ...btnG, cursor:'pointer', height:'44px' }}>
               CSV
@@ -680,6 +689,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
             </label>
             <button style={btnP} onClick={() => { setBoqForm({ exec_qty: 0 }); setSheet('boq') }}>＋ Add</button>
           </div>
+          )}
 
           {!pd.boq.length && <BusinessEmptyState.NoBOQ onCta={() => { setBoqForm({ exec_qty:0 }); setSheet('boq') }} ctaLabel="＋ Add Item"/>}
 
@@ -737,9 +747,11 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
       ══════════════════════════════════════════════════════ */}
       {tab === 'documents' && (
         <div style={{ padding: space[4] }}>
-          <div style={{ display:'flex', justifyContent:'flex-end', marginBottom: space[3] }}>
-            <button style={btnP} onClick={() => { setDocForm({ type:'Other', approval_status:'Draft' }); setSheet('document') }}>＋ Link</button>
-          </div>
+          {pd.documents.length > 0 && (
+            <div style={{ display:'flex', justifyContent:'flex-end', marginBottom: space[3] }}>
+              <button style={btnP} onClick={() => { setDocForm({ type:'Other', approval_status:'Draft' }); setSheet('document') }}>＋ Link</button>
+            </div>
+          )}
 
           {!pd.documents.length && <BusinessEmptyState.NoDocuments onCta={() => { setDocForm({ type:'Other', approval_status:'Draft' }); setSheet('document') }} ctaLabel="＋ Link Document"/>}
 
@@ -789,6 +801,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
       ══════════════════════════════════════════════════════ */}
       {tab === 'photos' && (
         <div style={{ padding: space[4] }}>
+          {pd.boq.length > 0 && (
           <div style={{ display:'flex', gap: space[2], justifyContent:'flex-end', marginBottom: space[3] }}>
             <label style={{ ...btnG, cursor:'pointer', height:'44px' }}>
               <Ico icon={CameraIcon} size={16}/> Camera
