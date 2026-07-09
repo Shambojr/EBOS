@@ -125,7 +125,7 @@ function InnerApp() {
     if (view === 'home' || view === 'projects' || view === 'finance') {
       const idx = MAIN_ORDER.indexOf(view as string)
       const next = dx < 0 ? idx + 1 : idx - 1
-      if (next >= 0 && next < MAIN_ORDER.length) setView(MAIN_ORDER[next])
+      if (next >= 0 && next < MAIN_ORDER.length) setView(MAIN_ORDER[next] as any)
     } else if (view === 'project' && activeProject) {
       const allowedTabs = PROJECT_TABS[role]
       const idx = allowedTabs.indexOf(tab)
