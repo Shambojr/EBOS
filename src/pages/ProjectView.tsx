@@ -993,7 +993,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
             <div>
               {jms.items.length > 0 && (
                 <div style={{ display:'flex', justifyContent:'flex-end', marginBottom: space[3] }}>
-                  <button style={T.btnPrimary} onClick={() => { setJmsItemForm({}); setSheet('jms-item') }}>＋ Add Item</button>
+                  <button style={T.btnPrimary} onClick={() => { setJmsItemForm({ unit:'sqm' }); setSheet('jms-item') }}>＋ Add Item</button>
                 </div>
               )}
 
@@ -1003,7 +1003,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
                   title="No JMS Items"
                   body="Add BOQ items to measure. Enter location-wise dimensions — quantities calculate automatically."
                   ctaLabel="＋ Add First Item"
-                  onCta={() => { setJmsItemForm({}); setSheet('jms-item') }}
+                  onCta={() => { setJmsItemForm({ unit:'sqm' }); setSheet('jms-item') }}
                 />
               )}
 
@@ -1038,7 +1038,7 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
               {sheet === 'jms-item' && (
                 <Sheet title="Add BOQ Item to Measure" onClose={() => setSheet(null)}
                   footer={<><button onClick={() => setSheet(null)} style={{ ...T.btnOutline, flex:0 }}>Cancel</button><button onClick={async () => {
-                    const err = await jms.addItem(jmsItemForm)
+                    const err = await jms.addItem({ ...jmsItemForm, unit: jmsItemForm.unit || 'sqm' })
                     if (err) toast('Error: ' + err)
                     else { toast('Item added'); setSheet(null); setJmsItemForm({}) }
                   }} style={{ ...T.btnPrimary, flex:1 }}>Add</button></>}>
