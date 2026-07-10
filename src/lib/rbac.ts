@@ -79,10 +79,10 @@ export const NAV_TABS: Record<UserRole, Array<{ key: string; label: string }>> =
   ],
 }
 export const PROJECT_TABS: Record<UserRole, string[]> = {
-  director:      ['overview','stages','milestones','logs','materials','expenses','boq','documents','photos'],
+  director:      ['overview','stages','milestones','logs','materials','expenses','boq','jms','documents','photos'],
   accountant:    ['overview','expenses','boq','documents'],
-  site_engineer: ['overview','stages','milestones','logs','materials','boq','documents','photos'],
-  supervisor:    ['overview','stages','milestones','logs','materials','boq','documents','photos'],
+  site_engineer: ['overview','stages','milestones','logs','materials','boq','jms','documents','photos'],
+  supervisor:    ['overview','stages','milestones','logs','materials','boq','jms','documents','photos'],
   office_staff:  ['overview','logs','documents','photos'],
 }
 export const ROLE_LABELS: Record<UserRole, string> = {
