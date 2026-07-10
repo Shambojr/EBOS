@@ -18,6 +18,7 @@ import { DirectorOffice } from './pages/DirectorOffice'
 import { ProjectView } from './pages/ProjectView'
 import { WorkspacePage } from './pages/WorkspacePage'
 import { LockScreen } from './pages/LockScreen'
+import { CalendarSheet } from './pages/CalendarSheet'
 import { usePinLock } from './hooks/usePinLock'
 import { can, PROJECT_TABS, NAV_TABS } from './lib/rbac'
 import { useProjectData } from './hooks/useProjectData'
@@ -102,6 +103,7 @@ function InnerApp() {
   const navTabs = NAV_TABS[role]
   const pinLock = usePinLock()
   const [showPinSetup, setShowPinSetup] = React.useState(false)
+  const [showCalendar, setShowCalendar] = React.useState(false)
 
   const goProject = (p: Project) => { setActiveProject(p); setTab('overview'); setView('project') }
   const goBack = () => { setActiveProject(null); setView('projects') }
@@ -681,6 +683,34 @@ function InnerApp() {
       <BottomNav/>
       <NotifPanel/>
       <ProfileSheet/>
+      {/* Floating calendar button */}
+      <button
+        onClick={() => setShowCalendar(true)}
+        style={{
+          position:'fixed', bottom:'84px', right:'16px', zIndex:40,
+          width:'46px', height:'46px', borderRadius:'14px',
+          background:'#fff', border:`1px solid ${C.border}`,
+          boxShadow:'0 2px 12px rgba(0,0,0,.12)',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          cursor:'pointer', color:C.navy,
+          WebkitTapHighlightColor:'transparent' as any,
+          transition:'transform .12s ease',
+        }}
+        onTouchStart={e => e.currentTarget.style.transform='scale(.9)'}
+        onTouchEnd={e   => e.currentTarget.style.transform='scale(1)'}
+      >
+        <Ico icon={CalendarDaysIcon} size={22}/>
+      </button>
+      {/* Calendar sheet */}
+      {showCalendar && (
+        <CalendarSheet
+          onClose={() => setShowCalendar(false)}
+          reminders={ws.reminders}
+          tasks={ws.tasks}
+          projects={projects}
+          userId={user!.profile.id}
+        />
+      )}
       {/* ProjectSheet inlined — avoids remount/keyboard-dismiss on each keystroke */}
       {(sheet === 'new-project' || sheet === 'edit-project') && (
         <Sheet title={editProjId ? 'Edit Project' : 'New Project'} onClose={() => setSheet(null)}
