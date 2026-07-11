@@ -865,131 +865,173 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
             const total   = totalQty(itemRows, item?.unit ?? 'sqm')
             const fields  = fieldsForUnit(item?.unit ?? 'sqm')
             if (!item) return null
-            const selItemUnit = item.unit
+            const unit = item.unit
 
-            // Live preview of quick entry
+            // Quick entry strip state
+            const qf = jmsRowForm
+            const setQf = (v: any) => setJmsRowForm((f:any) => ({...f,...v}))
+            const isDed = !!qf.is_deduction
+
+            // Live preview qty
             const previewQty = calcQty({
-              no:           Number(jmsRowForm.no) || 0,
-              length:       Number(jmsRowForm.l)  || undefined,
-              breadth:      Number(jmsRowForm.b)  || undefined,
-              depth_weight: Number(jmsRowForm.dw) || undefined,
-            }, selItemUnit)
+              no: Number(qf.no)||1, is_deduction: isDed,
+              length: Number(qf.l)||undefined, breadth: Number(qf.b)||undefined, depth_weight: Number(qf.dw)||undefined,
+            }, unit)
 
             const handleQuickAdd = async () => {
-              if (!jmsRowForm.no) return
-              const no = Number(jmsRowForm.no) || 1
               const err = await jms.addRow(jmsItem, {
-                location:     jmsRowForm.location || undefined,
-                no,
-                is_deduction: no < 0,
-                length:       Number(jmsRowForm.l)  || undefined,
-                breadth:      Number(jmsRowForm.b)  || undefined,
-                depth_weight: Number(jmsRowForm.dw) || undefined,
-                remarks:      jmsRowForm.remarks || undefined,
+                location: qf.location||undefined, no: Number(qf.no)||1,
+                is_deduction: isDed,
+                length: Number(qf.l)||undefined, breadth: Number(qf.b)||undefined,
+                depth_weight: Number(qf.dw)||undefined, remarks: qf.remarks||undefined,
               })
               if (err) toast('Error: ' + err)
-              else setJmsRowForm({ no:'1', location:'', l:'', b:'', dw:'', remarks:'' })
+              else setJmsRowForm({ no:'1', is_deduction:false, location:'', l:'', b:'', dw:'', remarks:'' })
             }
 
             return (
-              <div style={{ display:'flex', flexDirection:'column', height:'calc(100vh - 200px)' }}>
-                {/* Back + item header */}
-                <div style={{ display:'flex', alignItems:'center', gap: space[2], marginBottom: space[3] }}>
+              <div style={{ display:'flex', flexDirection:'column', height:'calc(100vh - 190px)', minHeight:'400px' }}>
+
+                {/* Back + header */}
+                <div style={{ display:'flex', alignItems:'center', gap:space[2], marginBottom:space[3] }}>
                   <button onClick={() => setJmsItem(null)} style={{ ...T.btnOutline, height:'36px', flexShrink:0 }}>← Back</button>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize: TY.sizeXs, fontWeight: TY.weightBold, color: C.slate, textTransform:'uppercase', letterSpacing: TY.trackingWide }}>{item.boq_item_no} · {item.jms_ref || ''}</div>
-                    <div style={{ fontSize: TY.sizeLg, fontWeight: TY.weightBold, color: C.ink, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.description}</div>
-                  </div>
-                </div>
-
-                {/* Total quantity pill */}
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:`${space[2]} ${space[3]}`, background: C.navy, borderRadius: R.md, marginBottom: space[3] }}>
-                  <div style={{ fontSize: TY.sizeXs, fontWeight: TY.weightBold, color:'rgba(255,255,255,.5)', textTransform:'uppercase', letterSpacing: TY.trackingWide }}>Total · {itemRows.length} rows</div>
-                  <div style={{ fontSize:'22px', fontWeight:800, color: total < 0 ? '#f87171' : '#fff', letterSpacing:'-0.02em' }}>
-                    {total.toFixed(3)} <span style={{ fontSize: TY.sizeSm, fontWeight:600, color:'rgba(255,255,255,.5)' }}>{item.unit}</span>
-                  </div>
-                </div>
-
-                {/* Scrollable table */}
-                <div style={{ flex:1, overflowY:'auto', overflowX:'auto', WebkitOverflowScrolling:'touch' as any }}>
-                  {itemRows.length === 0 ? (
-                    <div style={{ textAlign:'center', padding:`${space[5]} 0`, color: C.slate, fontSize: TY.sizeSm }}>
-                      No rows yet — use the entry strip below to add measurements
+                    <div style={{ fontSize:TY.sizeXs, fontWeight:TY.weightBold, color:C.slate, textTransform:'uppercase', letterSpacing:TY.trackingWide }}>
+                      {item.boq_item_no}{item.jms_ref ? ` · ${item.jms_ref}` : ''}
                     </div>
-                  ) : (
-                    <table style={{ width:'100%', minWidth:'460px', borderCollapse:'collapse', fontSize: TY.sizeSm }}>
-                      <thead>
-                        <tr style={{ background: C.mist }}>
-                          <th style={{ padding:`6px ${space[2]}`, textAlign:'left', fontSize:'10px', fontWeight:700, color: C.slate, textTransform:'uppercase', letterSpacing: TY.trackingWide, minWidth:'110px' }}>Location</th>
-                          <th style={{ padding:`6px ${space[2]}`, textAlign:'center', fontSize:'10px', fontWeight:700, color: C.slate, textTransform:'uppercase', width:'48px' }}>No.</th>
-                          {fields.L  && <th style={{ padding:`6px ${space[2]}`, textAlign:'center', fontSize:'10px', fontWeight:700, color: C.slate, textTransform:'uppercase', width:'60px' }}>L</th>}
-                          {fields.B  && <th style={{ padding:`6px ${space[2]}`, textAlign:'center', fontSize:'10px', fontWeight:700, color: C.slate, textTransform:'uppercase', width:'60px' }}>B</th>}
-                          {fields.DW && <th style={{ padding:`6px ${space[2]}`, textAlign:'center', fontSize:'10px', fontWeight:700, color: C.slate, textTransform:'uppercase', width:'60px' }}>{fields.dwLabel.split(' ')[0]}</th>}
-                          <th style={{ padding:`6px ${space[2]}`, textAlign:'right', fontSize:'10px', fontWeight:700, color: C.slate, textTransform:'uppercase', width:'70px' }}>Qty</th>
-                          <th style={{ width:'28px' }}/>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {itemRows.map((r, i) => {
-                          const qty = calcQty(r, selItemUnit)
-                          const isNeg = qty < 0
+                    <div style={{ fontSize:TY.sizeLg, fontWeight:TY.weightBold, color:C.ink, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.description}</div>
+                  </div>
+                </div>
+
+                {/* Total hero row */}
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:`${space[2]} ${space[3]}`, background:C.navy, borderRadius:R.md, marginBottom:space[3] }}>
+                  <div style={{ fontSize:TY.sizeXs, fontWeight:TY.weightBold, color:'rgba(255,255,255,.45)', textTransform:'uppercase', letterSpacing:TY.trackingWide }}>
+                    Total · {itemRows.length} row{itemRows.length!==1?'s':''}
+                  </div>
+                  <div style={{ fontSize:'22px', fontWeight:800, color:total<0?'#f87171':'#fff', letterSpacing:'-0.02em' }}>
+                    {total.toFixed(3)} <span style={{ fontSize:TY.sizeSm, fontWeight:600, color:'rgba(255,255,255,.4)' }}>{unit}</span>
+                  </div>
+                </div>
+
+                {/* ── Table (scrollable both axes) ── */}
+                <div style={{ flex:1, overflowY:'auto', overflowX:'auto', WebkitOverflowScrolling:'touch' as any, borderRadius:R.md, border:`1px solid ${C_.border}` }}>
+                  <table style={{ width:'100%', minWidth:'680px', borderCollapse:'collapse', fontSize:'12px' }}>
+                    <thead style={{ position:'sticky', top:0, zIndex:5 }}>
+                      <tr style={{ background:C_.bgMuted }}>
+                        {['Location','No.','Sets','Length','Breadth','Depth/Wt','Quantity','Remarks',''].map((h,i) => (
+                          <th key={i} style={{ padding:'7px 8px', textAlign: i>=1&&i<=6?'center':'left', fontSize:'10px', fontWeight:700, color:C.slate, textTransform:'uppercase', letterSpacing:TY.trackingWide, whiteSpace:'nowrap', borderBottom:`1px solid ${C_.border}` }}>
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {itemRows.length === 0 && (
+                        <tr><td colSpan={9} style={{ padding:'32px', textAlign:'center', color:C.slate, fontSize:TY.sizeSm }}>
+                          No measurements yet — use the entry strip below
+                        </td></tr>
+                      )}
+                      {itemRows.map((r, i) => {
+                        const qty    = calcQty(r, unit)
+                        const isNeg  = r.is_deduction
+                        const isEdit = sheet === `jms-edit-${r.id}`
+
+                        if (isEdit) {
+                          // Inline edit row
+                          const ef = jmsRowForm
                           return (
-                            <tr key={r.id} style={{ borderBottom:`1px solid ${C_.border}`, background: isNeg ? C_.dangerBg : i%2===1 ? C.mist : '#fff' }}>
-                              <td style={{ padding:`8px ${space[2]}`, color: isNeg ? C_.danger : C.ink, fontWeight: TY.weightMedium }}>
-                                {r.location || <span style={{ color: C.slate, fontStyle:'italic' }}>—</span>}
+                            <tr key={r.id} style={{ background:C_.infoBg }}>
+                              <td style={{ padding:'4px 6px' }}><input style={{ ...T.field, height:'32px', fontSize:'12px', minWidth:'100px' }} value={ef.location||''} onChange={e=>setJmsRowForm((f:any)=>({...f,location:e.target.value}))} placeholder="Location"/></td>
+                              <td style={{ padding:'4px 4px' }}><input style={{ ...T.field, height:'32px', fontSize:'12px', width:'48px', textAlign:'center' }} type="number" value={ef.no??'1'} onChange={e=>setJmsRowForm((f:any)=>({...f,no:e.target.value}))}/></td>
+                              <td style={{ padding:'4px 4px', textAlign:'center' }}>
+                                <button onClick={()=>setJmsRowForm((f:any)=>({...f,is_deduction:!f.is_deduction}))} style={{ width:'44px', height:'32px', borderRadius:'6px', border:`1px solid ${ef.is_deduction?C_.danger:C_.success}`, background:ef.is_deduction?C_.dangerBg:C_.successBg, color:ef.is_deduction?C_.danger:C_.success, fontSize:'10px', fontWeight:700, cursor:'pointer' }}>
+                                  {ef.is_deduction?'DED':'ADD'}
+                                </button>
                               </td>
-                              <td style={{ padding:`8px ${space[2]}`, textAlign:'center', color: isNeg ? C_.danger : C.slate }}>{r.no}</td>
-                              {fields.L  && <td style={{ padding:`8px ${space[2]}`, textAlign:'center', color: C.slate }}>{r.length ?? '—'}</td>}
-                              {fields.B  && <td style={{ padding:`8px ${space[2]}`, textAlign:'center', color: C.slate }}>{r.breadth ?? '—'}</td>}
-                              {fields.DW && <td style={{ padding:`8px ${space[2]}`, textAlign:'center', color: C.slate }}>{r.depth_weight ?? '—'}</td>}
-                              <td style={{ padding:`8px ${space[2]}`, textAlign:'right', fontWeight:700, color: isNeg ? C_.danger : C_.info }}>{qty.toFixed(3)}</td>
-                              <td style={{ padding:`4px 4px` }}>
-                                <button onClick={() => jms.deleteRow(jmsItem, r.id)} style={{ width:'24px', height:'24px', borderRadius:'6px', background: C_.dangerBg, border:'none', color: C_.danger, cursor:'pointer', fontSize:'12px', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+                              <td style={{ padding:'4px 4px' }}>{fields.L&&<input style={{ ...T.field, height:'32px', fontSize:'12px', width:'56px', textAlign:'center' }} type="number" step="0.001" value={ef.l||''} onChange={e=>setJmsRowForm((f:any)=>({...f,l:e.target.value}))}/>}</td>
+                              <td style={{ padding:'4px 4px' }}>{fields.B&&<input style={{ ...T.field, height:'32px', fontSize:'12px', width:'56px', textAlign:'center' }} type="number" step="0.001" value={ef.b||''} onChange={e=>setJmsRowForm((f:any)=>({...f,b:e.target.value}))}/>}</td>
+                              <td style={{ padding:'4px 4px' }}>{fields.DW&&<input style={{ ...T.field, height:'32px', fontSize:'12px', width:'56px', textAlign:'center' }} type="number" step="0.001" value={ef.dw||''} onChange={e=>setJmsRowForm((f:any)=>({...f,dw:e.target.value}))}/>}</td>
+                              <td style={{ padding:'4px 4px', textAlign:'center', fontWeight:700, color:calcQty({no:Number(ef.no)||1,is_deduction:ef.is_deduction,length:Number(ef.l)||undefined,breadth:Number(ef.b)||undefined,depth_weight:Number(ef.dw)||undefined},unit)<0?C_.danger:C_.info }}>
+                                {calcQty({no:Number(ef.no)||1,is_deduction:ef.is_deduction,length:Number(ef.l)||undefined,breadth:Number(ef.b)||undefined,depth_weight:Number(ef.dw)||undefined},unit).toFixed(3)}
+                              </td>
+                              <td style={{ padding:'4px 4px' }}><input style={{ ...T.field, height:'32px', fontSize:'12px', minWidth:'80px' }} value={ef.remarks||''} onChange={e=>setJmsRowForm((f:any)=>({...f,remarks:e.target.value}))} placeholder="Remarks"/></td>
+                              <td style={{ padding:'4px 4px' }}>
+                                <div style={{ display:'flex', gap:'3px' }}>
+                                  <button onClick={async()=>{ const err=await jms.updateRow(jmsItem,r.id,{location:ef.location||undefined,no:Number(ef.no)||1,is_deduction:ef.is_deduction,length:Number(ef.l)||undefined,breadth:Number(ef.b)||undefined,depth_weight:Number(ef.dw)||undefined,remarks:ef.remarks||undefined}); if(err)toast('Error: '+err); else{toast('Saved');setSheet(null)} }} style={{ height:'28px', padding:'0 8px', borderRadius:'6px', background:C_.success, color:'#fff', border:'none', cursor:'pointer', fontSize:'11px', fontWeight:700 }}>✓</button>
+                                  <button onClick={()=>setSheet(null)} style={{ height:'28px', padding:'0 8px', borderRadius:'6px', background:C_.bgMuted, color:C.slate, border:'none', cursor:'pointer', fontSize:'11px' }}>✕</button>
+                                </div>
                               </td>
                             </tr>
                           )
-                        })}
-                        {/* Running total row */}
-                        <tr style={{ background: C.navy }}>
-                          <td colSpan={1 + (fields.L?1:0) + (fields.B?1:0) + (fields.DW?1:0) + 1} style={{ padding:`8px ${space[2]}`, fontSize: TY.sizeXs, fontWeight:700, color:'rgba(255,255,255,.6)', textTransform:'uppercase', letterSpacing: TY.trackingWide }}>Total</td>
-                          <td style={{ padding:`8px ${space[2]}`, textAlign:'right', fontWeight:800, color: total < 0 ? '#f87171' : '#fff', fontSize: TY.sizeLg }}>{total.toFixed(3)}</td>
-                          <td style={{ padding:`8px 4px`, fontSize:'11px', color:'rgba(255,255,255,.4)' }}>{item.unit}</td>
+                        }
+
+                        return (
+                          <tr key={r.id} style={{ borderBottom:`1px solid ${C_.border}`, background:isNeg?C_.dangerBg:i%2===1?C_.bgMuted:'#fff' }}>
+                            <td style={{ padding:'7px 8px', color:isNeg?C_.danger:C.ink, fontWeight:TY.weightMedium, minWidth:'100px' }}>
+                              {r.location || <span style={{ color:C.slate, fontStyle:'italic' }}>—</span>}
+                            </td>
+                            <td style={{ padding:'7px 6px', textAlign:'center', color:C.slate }}>{r.no}</td>
+                            <td style={{ padding:'7px 4px', textAlign:'center' }}>
+                              <span style={{ padding:'1px 5px', borderRadius:'4px', fontSize:'10px', fontWeight:700, background:isNeg?C_.dangerBg:C_.successBg, color:isNeg?C_.danger:C_.success }}>
+                                {isNeg?'-1':'+1'}
+                              </span>
+                            </td>
+                            <td style={{ padding:'7px 6px', textAlign:'center', color:C.slate }}>{r.length??'—'}</td>
+                            <td style={{ padding:'7px 6px', textAlign:'center', color:C.slate }}>{r.breadth??'—'}</td>
+                            <td style={{ padding:'7px 6px', textAlign:'center', color:C.slate }}>{r.depth_weight??'—'}</td>
+                            <td style={{ padding:'7px 6px', textAlign:'center', fontWeight:700, color:isNeg?C_.danger:C_.info }}>{qty.toFixed(3)}</td>
+                            <td style={{ padding:'7px 6px', color:C.slate, fontSize:'11px', maxWidth:'100px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.remarks||''}</td>
+                            <td style={{ padding:'4px 4px' }}>
+                              <div style={{ display:'flex', gap:'3px' }}>
+                                <button onClick={()=>{ setJmsRowForm({ no:String(r.no), is_deduction:r.is_deduction, location:r.location||'', l:r.length?String(r.length):'', b:r.breadth?String(r.breadth):'', dw:r.depth_weight?String(r.depth_weight):'', remarks:r.remarks||'' }); setSheet(`jms-edit-${r.id}`) }}
+                                  style={{ height:'28px', padding:'0 8px', borderRadius:'6px', background:C_.bgMuted, color:C.slate, border:`1px solid ${C_.border}`, cursor:'pointer', fontSize:'11px' }}>Edit</button>
+                                <button onClick={()=>{ if(confirm('Delete row?')) jms.deleteRow(jmsItem, r.id) }}
+                                  style={{ height:'28px', width:'28px', borderRadius:'6px', background:C_.dangerBg, color:C_.danger, border:'none', cursor:'pointer', fontSize:'12px' }}>✕</button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+
+                      {/* Total row */}
+                      {itemRows.length > 0 && (
+                        <tr style={{ background:C.navy }}>
+                          <td colSpan={6} style={{ padding:'8px', fontSize:TY.sizeXs, fontWeight:700, color:'rgba(255,255,255,.5)', textTransform:'uppercase', letterSpacing:TY.trackingWide }}>Total Quantity</td>
+                          <td style={{ padding:'8px 6px', textAlign:'center', fontWeight:800, color:total<0?'#f87171':'#fff', fontSize:TY.sizeLg }}>{total.toFixed(3)}</td>
+                          <td style={{ padding:'8px 6px', fontSize:TY.sizeXs, color:'rgba(255,255,255,.4)' }}>{unit}</td>
+                          <td/>
                         </tr>
-                      </tbody>
-                    </table>
-                  )}
+                      )}
+                    </tbody>
+                  </table>
                 </div>
 
                 {/* ── Sticky quick-entry strip ── */}
-                <div style={{ borderTop:`2px solid ${C_.border}`, background:'#fff', padding:`${space[2]} 0 ${space[1]}` }}>
-                  <div style={{ fontSize:'10px', fontWeight:700, color: C.slate, textTransform:'uppercase', letterSpacing: TY.trackingWide, marginBottom: space[1], paddingLeft: space[2] }}>
-                    Quick Entry · {previewQty !== 0 ? <span style={{ color: previewQty < 0 ? C_.danger : C_.info }}>{previewQty.toFixed(3)} {selItemUnit}</span> : 'fill fields below'}
+                <div style={{ borderTop:`2px solid ${C_.border}`, background:'#fff', paddingTop:space[2] }}>
+                  {/* Preview */}
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:space[1], paddingLeft:space[2] }}>
+                    <div style={{ fontSize:'10px', fontWeight:700, color:C.slate, textTransform:'uppercase', letterSpacing:TY.trackingWide }}>
+                      {isDed ? '⊖ Deduction' : '＋ Addition'}
+                    </div>
+                    {previewQty !== 0 && (
+                      <div style={{ fontSize:TY.sizeSm, fontWeight:700, color:previewQty<0?C_.danger:C_.info, paddingRight:space[2] }}>
+                        {previewQty.toFixed(3)} {unit}
+                      </div>
+                    )}
                   </div>
-                  <div style={{ display:'flex', gap:'4px', overflowX:'auto', WebkitOverflowScrolling:'touch' as any, paddingBottom: space[1] }}>
-                    <input
-                      placeholder="Location / Area"
-                      value={jmsRowForm.location||''}
-                      onChange={e => setJmsRowForm((f:any) => ({...f, location:e.target.value}))}
-                      style={{ ...T.field, minWidth:'130px', flex:2, height:'40px', fontSize: TY.sizeSm }}
-                    />
-                    <input
-                      placeholder="No."
-                      type="number"
-                      value={jmsRowForm.no??'1'}
-                      onChange={e => setJmsRowForm((f:any) => ({...f, no:e.target.value}))}
-                      style={{ ...T.field, width:'56px', minWidth:'56px', height:'40px', fontSize: TY.sizeSm, textAlign:'center' }}
-                      title="Use negative for deductions (e.g. -1)"
-                    />
-                    {fields.L && <input placeholder="L" type="number" step="0.001" value={jmsRowForm.l||''} onChange={e=>setJmsRowForm((f:any)=>({...f,l:e.target.value}))} style={{ ...T.field, width:'64px', minWidth:'64px', height:'40px', fontSize: TY.sizeSm, textAlign:'center' }}/>}
-                    {fields.B && <input placeholder="B" type="number" step="0.001" value={jmsRowForm.b||''} onChange={e=>setJmsRowForm((f:any)=>({...f,b:e.target.value}))} style={{ ...T.field, width:'64px', minWidth:'64px', height:'40px', fontSize: TY.sizeSm, textAlign:'center' }}/>}
-                    {fields.DW && <input placeholder={fields.dwLabel.split(' ')[0]} type="number" step="0.001" value={jmsRowForm.dw||''} onChange={e=>setJmsRowForm((f:any)=>({...f,dw:e.target.value}))} style={{ ...T.field, width:'64px', minWidth:'64px', height:'40px', fontSize: TY.sizeSm, textAlign:'center' }}/>}
-                    <button
-                      onClick={handleQuickAdd}
-                      style={{ ...T.btnPrimary, height:'40px', minWidth:'44px', flexShrink:0, fontSize:'20px', padding:'0 12px' }}
-                    >＋</button>
-                  </div>
-                  <div style={{ fontSize:'10px', color: C.slate, paddingLeft: space[2], marginTop:'2px' }}>
-                    Tip: use negative No. for deductions (e.g. -1)
+                  {/* Entry fields */}
+                  <div style={{ display:'flex', gap:'3px', overflowX:'auto', WebkitOverflowScrolling:'touch' as any, paddingBottom:space[2] }}>
+                    <input placeholder="Location / Area" value={qf.location||''} onChange={e=>setQf({location:e.target.value})} style={{ ...T.field, minWidth:'100px', flex:2, height:'40px', fontSize:'12px' }}/>
+                    <input placeholder="No" type="number" value={qf.no??'1'} onChange={e=>setQf({no:e.target.value})} style={{ ...T.field, width:'46px', minWidth:'46px', height:'40px', fontSize:'12px', textAlign:'center' }}/>
+                    {/* Sets toggle */}
+                    <button onClick={()=>setQf({is_deduction:!isDed})} style={{ width:'46px', minWidth:'46px', height:'40px', borderRadius:R.md, border:`1px solid ${isDed?C_.danger:C_.success}`, background:isDed?C_.dangerBg:C_.successBg, color:isDed?C_.danger:C_.success, fontSize:'10px', fontWeight:700, cursor:'pointer', flexShrink:0 }}>
+                      {isDed?'DED':'ADD'}
+                    </button>
+                    {fields.L  && <input placeholder="L" type="number" step="0.001" value={qf.l||''} onChange={e=>setQf({l:e.target.value})} style={{ ...T.field, width:'58px', minWidth:'58px', height:'40px', fontSize:'12px', textAlign:'center' }}/>}
+                    {fields.B  && <input placeholder="B" type="number" step="0.001" value={qf.b||''} onChange={e=>setQf({b:e.target.value})} style={{ ...T.field, width:'58px', minWidth:'58px', height:'40px', fontSize:'12px', textAlign:'center' }}/>}
+                    {fields.DW && <input placeholder={fields.dwLabel.split(' ')[0]} type="number" step="0.001" value={qf.dw||''} onChange={e=>setQf({dw:e.target.value})} style={{ ...T.field, width:'58px', minWidth:'58px', height:'40px', fontSize:'12px', textAlign:'center' }}/>}
+                    <input placeholder="Remark" value={qf.remarks||''} onChange={e=>setQf({remarks:e.target.value})} style={{ ...T.field, minWidth:'70px', width:'70px', height:'40px', fontSize:'12px' }}/>
+                    <button onClick={handleQuickAdd} style={{ ...T.btnPrimary, height:'40px', minWidth:'40px', flexShrink:0, fontSize:'18px', padding:'0 10px' }}>＋</button>
                   </div>
                 </div>
               </div>

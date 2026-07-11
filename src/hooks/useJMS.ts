@@ -31,20 +31,22 @@ export interface JMSRow {
 }
 
 // ── Quantity calculator ───────────────────────────────────────
-// no can be negative — negative = deduction (e.g. No = -1 for openings)
+// Formula: No × Sets × L × B × D/W = Qty
+// Sets = 1 (addition) or -1 (deduction) — separate from No
 export function calcQty(row: Partial<JMSRow>, unit: string): number {
-  const no = row.no           ?? 1   // negative allowed
-  const L  = row.length       ?? 0
-  const B  = row.breadth      ?? 0
-  const DW = row.depth_weight ?? 0
+  const no   = row.no           ?? 1
+  const sets = row.is_deduction ? -1 : 1
+  const L    = row.length       ?? 0
+  const B    = row.breadth      ?? 0
+  const DW   = row.depth_weight ?? 0
 
   switch (unit) {
-    case 'cum':                         return no * L * B * DW
-    case 'sqm':                         return no * L * B
-    case 'kg':                          return no * L * DW
-    case 'rmt': case 'm': case 'lm': case 'RM': return no * L
-    case 'no': case 'each': case 'set': case 'lot': return no
-    default:                            return no * L * (B || 1)
+    case 'cum':                              return no * sets * L * B * DW
+    case 'sqm':                             return no * sets * L * B
+    case 'kg':                              return no * sets * L * DW
+    case 'rmt': case 'm': case 'lm': case 'RM': return no * sets * L
+    case 'no': case 'each': case 'set': case 'lot': return no * sets
+    default:                                return no * sets * L * (B || 1)
   }
 }
 
