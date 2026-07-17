@@ -68,6 +68,33 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
   const [editId, setEditId] = useState<string | null>(null)
   const [forecastDays, setForecastDays] = useState(30)
   const [selectedFunding, setSelectedFunding] = useState<Funding | null>(null)
+  const [repayHistory,   setRepayHistory]     = useState<Record<string, any[]>>({})
+  const [expandedRepay,  setExpandedRepay]    = useState<Record<string, boolean>>({})
+
+  const loadRepayHistory = async (fundingId: string) => {
+    const { data } = await supabase
+      .from('funding_repayments')
+      .select('*')
+      .eq('funding_id', fundingId)
+      .order('payment_date', { ascending: false })
+    setRepayHistory(h => ({ ...h, [fundingId]: data ?? [] }))
+  }
+
+  const toggleRepayHistory = async (fundingId: string) => {
+    await loadRepayHistory(fundingId)
+    setExpandedRepay(e => ({ ...e, [fundingId]: !e[fundingId] }))
+  }
+  const [repayHistory, setRepayHistory]   = useState<Record<string, any[]>>({})
+  const [expandedRepay, setExpandedRepay] = useState<string | null>(null)
+
+  const fetchRepayHistory = async (fundingId: string) => {
+    const { data } = await supabase
+      .from('funding_repayments')
+      .select('*')
+      .eq('funding_id', fundingId)
+      .order('payment_date', { ascending: false })
+    if (data) setRepayHistory(h => ({ ...h, [fundingId]: data }))
+  }
   const [selectedReceivable, setSelectedReceivable] = useState<Receivable | null>(null)
   const [selectedPayable, setSelectedPayable] = useState<Payable | null>(null)
   const [billPhotoFile, setBillPhotoFile] = useState<File | null>(null)
@@ -304,9 +331,77 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
                   {f.interest_type !== 'None' && <span style={{ display:'inline-flex', alignItems:'center', gap:'4px' }}><Ico icon={ArrowTrendingUpIcon} size={14}/>{f.interest_rate}% {f.interest_type}</span>}
                 </div>
                 {f.notes && <div style={{ marginTop:space[2], fontSize:'12px', color:C.slate, padding:space[2], background:C.mist, borderRadius:R.md }}>{f.notes}</div>}
+
+                {/* Repayment history toggle */}
+                <div style={{ marginTop:space[3] }}>
+                  <button
+                    onClick={async () => {
+                      if (expandedRepay === f.id) { setExpandedRepay(null) }
+                      else { await fetchRepayHistory(f.id); setExpandedRepay(f.id) }
+                    }}
+                    style={{ ...btnG, width:'100%', justifyContent:'space-between', height:'36px', fontSize:'13px' }}>
+                    <span>Repayment History{f.amount_repaid > 0 ? ` · ${fmtCur(f.amount_repaid)} paid` : ''}</span>
+                    <span style={{ fontSize:'12px' }}>{expandedRepay === f.id ? '▲ Hide' : '▼ Show'}</span>
+                  </button>
+                  {expandedRepay === f.id && (
+                    <div style={{ marginTop:space[2], borderRadius:R.md, border:`1px solid ${C_.border}`, overflow:'hidden' }}>
+                      {!(repayHistory[f.id]?.length) ? (
+                        <div style={{ padding:space[3], textAlign:'center', color:C.slate, fontSize:'13px' }}>No repayments recorded yet</div>
+                      ) : (
+                        <>
+                          {/* Header */}
+                          <div style={{ display:'grid', gridTemplateColumns:'90px 1fr 1fr 1fr', background:C_.bgMuted, padding:`${space[1]} ${space[3]}`, borderBottom:`1px solid ${C_.border}` }}>
+                            {['Date','Principal','Interest','Total'].map(h => (
+                              <div key={h} style={{ fontSize:'10px', fontWeight:700, color:C.slate, textTransform:'uppercase', letterSpacing:'.06em', textAlign:'right', firstChild:{textAlign:'left'} as any }}>{h}</div>
+                            ))}
+                          </div>
+                          {/* Rows */}
+                          {repayHistory[f.id].map((r: any, i: number) => (
+                            <div key={r.id} style={{ display:'grid', gridTemplateColumns:'90px 1fr 1fr 1fr', padding:`${space[2]} ${space[3]}`, borderBottom: i < repayHistory[f.id].length-1 ? `1px solid ${C_.border}` : 'none', background: i%2===1 ? C_.bgMuted : '#fff', alignItems:'center' }}>
+                              <div style={{ fontSize:'12px', color:C.slate }}>{fmtDate(r.payment_date)}</div>
+                              <div style={{ fontSize:'13px', fontWeight:600, color:C.navy, textAlign:'right' }}>{fmtCur(r.principal||0)}</div>
+                              <div style={{ fontSize:'13px', color:C_.warning, textAlign:'right' }}>{fmtCur(r.interest||0)}</div>
+                              <div style={{ fontSize:'13px', fontWeight:700, color:C.ink, textAlign:'right' }}>{fmtCur((r.principal||0)+(r.interest||0))}</div>
+                            </div>
+                          ))}
+                          {/* Running total */}
+                          <div style={{ display:'grid', gridTemplateColumns:'90px 1fr 1fr 1fr', padding:`${space[2]} ${space[3]}`, background:C.navy }}>
+                            <div style={{ fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,.5)', textTransform:'uppercase' }}>Total</div>
+                            <div style={{ fontSize:'13px', fontWeight:700, color:'#fff', textAlign:'right' }}>{fmtCur(repayHistory[f.id].reduce((s:number,r:any)=>s+(r.principal||0),0))}</div>
+                            <div style={{ fontSize:'13px', fontWeight:700, color:'#fbbf24', textAlign:'right' }}>{fmtCur(repayHistory[f.id].reduce((s:number,r:any)=>s+(r.interest||0),0))}</div>
+                            <div style={{ fontSize:'13px', fontWeight:800, color:'#fff', textAlign:'right' }}>{fmtCur(f.amount_repaid)}</div>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
+              {/* Installment history */}
+              {expandedRepay[f.id] && (
+                <div style={{ borderTop:`1px solid ${C_.border}`, padding:`${space[3]} ${space[4]}` }}>
+                  <div style={{ fontSize:'10px', fontWeight:700, color:C.slate, textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:space[2] }}>
+                    Installments · {(repayHistory[f.id]??[]).length} payment{(repayHistory[f.id]??[]).length!==1?'s':''}
+                  </div>
+                  {(repayHistory[f.id]??[]).length === 0 ? (
+                    <div style={{ fontSize:'13px', color:C.slate, textAlign:'center', padding:`${space[2]} 0` }}>No repayments recorded yet</div>
+                  ) : (repayHistory[f.id]??[]).map((r: any, i: number) => (
+                    <div key={r.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', padding:`${space[2]} 0`, borderBottom: i < (repayHistory[f.id]??[]).length-1 ? `1px solid ${C_.border}` : 'none' }}>
+                      <div>
+                        <div style={{ fontSize:'13px', fontWeight:600, color:C.ink }}>{fmtDate(r.payment_date)}</div>
+                        {r.notes && <div style={{ fontSize:'11px', color:C.slate, marginTop:'2px' }}>{r.notes}</div>}
+                      </div>
+                      <div style={{ textAlign:'right' }}>
+                        <div style={{ fontSize:'14px', fontWeight:700, color:C_.success }}>{fmtCur(r.principal)}</div>
+                        {r.interest > 0 && <div style={{ fontSize:'11px', color:C_.warning }}>+ {fmtCur(r.interest)} interest</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
               <div style={{ padding:`${space[2]} ${space[4]} ${space[3]}`, display:'flex', gap:space[2], borderTop:`1px solid ${C_.divider}` }}>
                 <button style={{ ...btnP, flex:1 }} onClick={() => { setSelectedFunding(f); setForm({ principal:0, interest:0 }); setSheet('repay') }}>Record Repayment</button>
+                <button style={btnG} onClick={() => toggleRepayHistory(f.id)}>{expandedRepay[f.id] ? 'Hide' : 'History'}</button>
                 <button style={btnG} onClick={() => { setForm({ ...f, date_received:f.date_received, repayment_date:f.repayment_date??'' }); setEditId(f.id); setSheet('funding') }}>Edit</button>
                 <button style={btnG} onClick={async () => {
                   const blob = await generateReceipt({ docType:'FUNDING RECEIPT', refNumber:`FR-${f.id.slice(-6).toUpperCase()}`, partyLabel:'SOURCE', partyName:f.source_name, category:f.category+(f.lender_name?` · ${f.lender_name}`:''), date:f.date_received, dueDate:f.repayment_date, status:f.status, notes:f.notes, logoSrc:LOGO_NAVY, fields:[
@@ -348,7 +443,11 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
         {/* Repayment Sheet */}
         {sheet === 'repay' && selectedFunding && (
           <Sheet title={`Repay: ${selectedFunding.source_name}`} onClose={() => setSheet(null)}
-            footer={<><button onClick={() => setSheet(null)} style={{ ...btnG, flex:0 }}>Cancel</button><button onClick={() => save(() => fin.addRepayment(selectedFunding.id, { ...form, payment_date: form.payment_date || today() }))} style={{ ...btnP, flex:1 }}>Record</button></>}>
+            footer={<><button onClick={() => setSheet(null)} style={{ ...btnG, flex:0 }}>Cancel</button><button onClick={() => save(async () => {
+                const err = await fin.addRepayment(selectedFunding.id, { ...form, payment_date: form.payment_date || today() })
+                if (!err) await loadRepayHistory(selectedFunding.id)
+                return err
+              })} style={{ ...btnP, flex:1 }}>Record</button></>}>
             <div style={{ padding:'12px 14px', marginBottom:'16px', background:C.mist, borderRadius:'12px' }}>
               <div style={{ fontSize:'12px', color:C.slate }}>Outstanding: <strong style={{ color:C.navy }}>{fmtCur(selectedFunding.amount_received - selectedFunding.amount_repaid)}</strong> · Interest Accrued: <strong style={{ color:C.amber }}>{fmtCur(calcInterestAccrued(selectedFunding))}</strong></div>
             </div>
