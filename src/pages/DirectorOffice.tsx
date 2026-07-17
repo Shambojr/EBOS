@@ -84,17 +84,6 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
     await loadRepayHistory(fundingId)
     setExpandedRepay(e => ({ ...e, [fundingId]: !e[fundingId] }))
   }
-  const [repayHistory, setRepayHistory]   = useState<Record<string, any[]>>({})
-  const [expandedRepay, setExpandedRepay] = useState<string | null>(null)
-
-  const fetchRepayHistory = async (fundingId: string) => {
-    const { data } = await supabase
-      .from('funding_repayments')
-      .select('*')
-      .eq('funding_id', fundingId)
-      .order('payment_date', { ascending: false })
-    if (data) setRepayHistory(h => ({ ...h, [fundingId]: data }))
-  }
   const [selectedReceivable, setSelectedReceivable] = useState<Receivable | null>(null)
   const [selectedPayable, setSelectedPayable] = useState<Payable | null>(null)
   const [billPhotoFile, setBillPhotoFile] = useState<File | null>(null)
@@ -336,14 +325,14 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
                 <div style={{ marginTop:space[3] }}>
                   <button
                     onClick={async () => {
-                      if (expandedRepay === f.id) { setExpandedRepay(null) }
-                      else { await fetchRepayHistory(f.id); setExpandedRepay(f.id) }
+                      await toggleRepayHistory(f.id)
+                      
                     }}
                     style={{ ...btnG, width:'100%', justifyContent:'space-between', height:'36px', fontSize:'13px' }}>
                     <span>Repayment History{f.amount_repaid > 0 ? ` · ${fmtCur(f.amount_repaid)} paid` : ''}</span>
-                    <span style={{ fontSize:'12px' }}>{expandedRepay === f.id ? '▲ Hide' : '▼ Show'}</span>
+                    <span style={{ fontSize:'12px' }}>{expandedRepay[f.id] ? 'Hide' : 'History'}</span>
                   </button>
-                  {expandedRepay === f.id && (
+                  {expandedRepay[f.id] && (
                     <div style={{ marginTop:space[2], borderRadius:R.md, border:`1px solid ${C_.border}`, overflow:'hidden' }}>
                       {!(repayHistory[f.id]?.length) ? (
                         <div style={{ padding:space[3], textAlign:'center', color:C.slate, fontSize:'13px' }}>No repayments recorded yet</div>
@@ -352,7 +341,7 @@ export function DirectorOffice({ currentUser, projects }: DirectorOfficeProps) {
                           {/* Header */}
                           <div style={{ display:'grid', gridTemplateColumns:'90px 1fr 1fr 1fr', background:C_.bgMuted, padding:`${space[1]} ${space[3]}`, borderBottom:`1px solid ${C_.border}` }}>
                             {['Date','Principal','Interest','Total'].map(h => (
-                              <div key={h} style={{ fontSize:'10px', fontWeight:700, color:C.slate, textTransform:'uppercase', letterSpacing:'.06em', textAlign:'right', firstChild:{textAlign:'left'} as any }}>{h}</div>
+                              <div key={h} style={{ fontSize:'10px', fontWeight:700, color:C.slate, textTransform:'uppercase', letterSpacing:'.06em', textAlign:'right' }}>{h}</div>
                             ))}
                           </div>
                           {/* Rows */}
