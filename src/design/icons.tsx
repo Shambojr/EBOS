@@ -93,6 +93,10 @@ import {
   ChevronRightIcon,
   ChevronLeftIcon,
   MapPinIcon,
+
+  // Messaging
+  ChatBubbleLeftRightIcon,
+  PaperAirplaneIcon,
 } from '@heroicons/react/24/outline'
 
 // Re-export everything
@@ -112,6 +116,7 @@ export {
   InformationCircleIcon, CheckCircleIcon, XCircleIcon, BellIcon, BellAlertIcon,
   UserCircleIcon, ArrowRightOnRectangleIcon, UserPlusIcon,
   ChevronRightIcon, ChevronLeftIcon, MapPinIcon,
+  ChatBubbleLeftRightIcon, PaperAirplaneIcon,
 }
 
 // ── Ico helper — consistent sizing ────────────────────────────

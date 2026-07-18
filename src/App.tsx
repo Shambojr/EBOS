@@ -5,11 +5,12 @@ import {
   HomeIcon, BuildingOffice2Icon, ClipboardDocumentListIcon, CurrencyRupeeIcon,
   EllipsisHorizontalIcon, CheckIcon, BellIcon, BellAlertIcon, CalendarDaysIcon, MapPinIcon,
   ChevronLeftIcon, ChevronRightIcon, ExclamationTriangleIcon, ArrowRightOnRectangleIcon,
-  UsersIcon, CameraIcon, KeyIcon, XMarkIcon, Ico,
+  UsersIcon, CameraIcon, KeyIcon, XMarkIcon, Ico, ChatBubbleLeftRightIcon,
 } from './design/icons'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import { useProjects } from './hooks/useProjects'
 import { useNotifications } from './hooks/useNotifications'
+import { useMessages } from './hooks/useMessages'
 import { useWorkspace } from './hooks/useWorkspace'
 import { useOnlineStatus } from './hooks/useOnlineStatus'
 import { LoginPage } from './pages/LoginPage'
@@ -19,6 +20,7 @@ import { ProjectView } from './pages/ProjectView'
 import { WorkspacePage } from './pages/WorkspacePage'
 import { LockScreen } from './pages/LockScreen'
 import { CalendarSheet } from './pages/CalendarSheet'
+import { MessagesSheet } from './pages/MessagesSheet'
 import { usePinLock } from './hooks/usePinLock'
 import { can, PROJECT_TABS, NAV_TABS } from './lib/rbac'
 import { useProjectData } from './hooks/useProjectData'
@@ -90,6 +92,7 @@ function InnerApp() {
   const { user, signOut } = useAuth()
   const { status: syncStatus, pending } = useOnlineStatus()
   const { notifications, unreadCount, markAllRead } = useNotifications(user?.id)
+  const msgs = useMessages(user?.profile ?? null)
   const ws = useWorkspace(user?.profile ?? null)
   const { projects, loading: projLoading, createProject, updateProject, deleteProject } = useProjects(user?.profile ?? null)
   const [view, setView] = useState<'home' | 'projects' | 'project' | 'workspace' | 'activity' | 'more' | 'users' | 'finance'>('home')
@@ -97,6 +100,7 @@ function InnerApp() {
   const [tab, setTab] = useState('overview')
   const [sheet, setSheet] = useState<string | null>(null)
   const [showNotifs, setShowNotifs] = useState(false)
+  const [showMessages, setShowMessages] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
 
   const role = user!.profile.role as UserRole
@@ -173,6 +177,12 @@ function InnerApp() {
         <div style={{ display:'flex', alignItems:'center', gap:'4px', padding:'6px 8px' }}>
           <div style={{ width:'7px', height:'7px', borderRadius:'50%', background: syncStatus === 'online' ? C.green : syncStatus === 'offline' ? C.red : C.amber }}/>
         </div>
+        {/* Messages */}
+        <button onClick={() => setShowMessages(true)}
+          style={{ width:'36px', height:'36px', display:'flex', alignItems:'center', justifyContent:'center', background:'none', border:'none', cursor:'pointer', borderRadius:'10px', position:'relative', color: C.slate }}>
+          <Ico icon={ChatBubbleLeftRightIcon} size={20}/>
+          {msgs.totalUnread > 0 && <span style={{ position:'absolute', top:'7px', right:'7px', width:'6px', height:'6px', borderRadius:'50%', background: C.red }}/>}
+        </button>
         {/* Notifications */}
         <button onClick={() => setShowNotifs(true)}
           style={{ width:'36px', height:'36px', display:'flex', alignItems:'center', justifyContent:'center', background:'none', border:'none', cursor:'pointer', borderRadius:'10px', position:'relative', color: C.slate }}>
@@ -683,6 +693,13 @@ function InnerApp() {
       <BottomNav/>
       <NotifPanel/>
       <ProfileSheet/>
+      {showMessages && (
+        <MessagesSheet
+          onClose={() => setShowMessages(false)}
+          currentUser={user!.profile}
+          projects={projects.map(p => ({ id: p.id, name: p.name }))}
+        />
+      )}
       {/* Floating calendar button */}
       <button
         onClick={() => setShowCalendar(true)}

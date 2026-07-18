@@ -4,6 +4,7 @@
 // ════════════════════════════════════════════════════════════
 import { useState } from 'react'
 import { useWorkspace, TASK_CATEGORIES, REMINDER_CATS, PRIORITIES, TASK_STATUSES } from '../hooks/useWorkspace'
+import { CommentThread } from './CommentThread'
 // notifications passed as props from App.tsx
 import { colors as C_, space, radius as R, T, type as TY } from '../design/tokens'
 import { Sheet, FormGroup, Badge, EmptyState } from '../design/components'
@@ -210,6 +211,12 @@ export function WorkspacePage({ user, role, ws, notifications, markAllRead, unre
                             <button onClick={() => { setForm({ ...t, due_date:t.due_date??'', project_id:t.project_id??'', assigned_to:t.assigned_to??'' }); setSheet('task-edit-'+t.id) }} style={{ ...btnG, height:'32px', fontSize:TY.sizeSm }}>Edit</button>
                             <button onClick={() => { if(confirm('Delete task?')) ws.deleteTask(t.id) }} style={{ ...btnD, height:'32px' , display:'flex', alignItems:'center', justifyContent:'center' }}><Ico icon={XMarkIcon} size={16}/></button>
                           </div>
+                          <CommentThread
+                            entityType="task"
+                            entityId={t.id}
+                            currentUser={user}
+                            teamUsers={ws.teamUsers ?? []}
+                          />
                         </div>
                       )
                     })}

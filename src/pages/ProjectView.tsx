@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import { useProjectData } from '../hooks/useProjectData'
 import { useJMS, calcQty, totalQty, fieldsForUnit, UNITS } from '../hooks/useJMS'
 import { can, PROJECT_TABS } from '../lib/rbac'
+import { CommentThread } from './CommentThread'
 import { colors as C_, space, radius as R, T, type as TY } from '../design/tokens'
 import {
   Ico, STAGE_ICON_MAP, DOC_ICON_MAP,
@@ -456,6 +457,12 @@ export function ProjectView({ project, tab, setTab, sheet, setSheet, role, user 
                       <input type="file" accept="image/*" multiple style={{ display:'none' }} onChange={e => { const files = Array.from(e.target.files||[]); if(files.length) pd.addPhotos(files, 'General', l.id) }}/>
                     </label>
                   </div>
+                  <CommentThread
+                    entityType="log"
+                    entityId={l.id}
+                    currentUser={user}
+                    teamUsers={[]}
+                  />
                 </div>
               </div>
             )
